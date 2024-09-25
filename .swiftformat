@@ -1,0 +1,2 @@
+--extensionacl on-declarations
+--header "\n {file}\n Created by Kristof Liliom in {created.year}.\n"
