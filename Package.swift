@@ -55,7 +55,7 @@ var package = Package(
         ),
         .testTarget(
             name: "TableTests",
-            dependencies: ["Table"]
+            dependencies: ["RelationalSwift"]
         ),
 
         // Migration
