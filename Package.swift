@@ -65,7 +65,7 @@ var package = Package(
         ),
         .testTarget(
             name: "MigrationTests",
-            dependencies: ["Migration"]
+            dependencies: ["Migration", "Table"]
         ),
 
         // RelationalSwift
@@ -78,12 +78,12 @@ var package = Package(
 
 if useSwiftFormat {
     package.dependencies.append(
-        .package(url: "https://github.com/kliliom/SwiftFormatPlugin.git", from: "0.54.3")
+        .package(url: "https://github.com/kliliom/SwiftFormatPlugin.git", from: "0.54.5")
     )
 
     let targets = ["Interface", "TableMacros", "Table", "Migration"]
     package.targets.forEach { target in
-        guard targets.contains(where: { $0 == target.name || $0 == "\(target.name)Tests" }) else { return }
+        guard targets.contains(where: { target.name == $0 || target.name == "\($0)Tests" }) else { return }
         if target.plugins == nil {
             target.plugins = []
         }

@@ -3,170 +3,277 @@
 //  Created by Kristof Liliom in 2024.
 //
 
-import CryptoKit
 import Foundation
 
 @_exported import Interface
 
-/// An atomic migration step.
-public struct Step: Sendable {
-    /// The name describing the step.
+/// A migration that groups multiple change sets together.
+public class Migration {
+    /// Change sets to apply.
+    let changeSets: [ChangeSet]
+
+    /// Initializes a new `Migration`.
+    /// - Parameter changeSets: Change sets to apply.
+    public init(changeSets: [ChangeSet]) {
+        self.changeSets = changeSets
+    }
+
+    /// Validates the migration.
     ///
-    /// Do not use the same name for different steps.
-    /// Do not change the name of a step once it has been used.
-    public var name: String
-
-    /// The actions to be executed in the step.
-    public var actions: @Sendable (_ db: Database) async throws -> Void
-
-    /// Initializes a new migration step.
-    /// - Parameters:
-    ///   - name: Name describing the step.
-    ///   - actions: Actions to be executed in the step.
-    public init(name: String, actions: @Sendable @escaping (_: Database) async throws -> Void) {
-        self.name = name
-        self.actions = actions
-    }
-}
-
-/// Builder for migration steps.
-@resultBuilder
-public struct StepsBuilder {
-    public static func buildBlock(_ components: Step...) -> [Step] {
-        components
-    }
-}
-
-/// Migration class.
-public final class Migration {
-    /// Describes a migration version.
-    private struct Version {
-        /// Version number.
-        var number: Int
-        /// Steps to be executed in the version.
-        var steps: [Step]
-        /// Hash of the steps.
-        var hash: String
-    }
-
-    /// Describes a migrated version.
-    private struct MigratedVersion {
-        /// Version number.
-        let number: Int
-        /// Hash of the steps.
-        let hash: String
-        /// Migration start time.
-        let startedAt: Date
-        /// Migration end time.
-        let endedAt: Date
-    }
-
-    /// Array of versions to be migrated.
-    private var versions: [Version] = []
-
-    /// Table name for migration log.
-    private let tableName = "_db4swift_migration_log"
-
-    /// Initializes a new Migration.
-    public init() {}
-
-    /// Adds a new migration version.
-    /// - Parameters:
-    ///   - version: Version number.
-    ///   - builder: Steps builder.
-    public func add(version: Int, @StepsBuilder builder: () -> [Step]) throws {
-        guard !versions.contains(where: { $0.number == version }) else {
-            throw DB4SwiftMigrationError(message: "migration version \(version) already exists")
+    /// This method returns validation checks that differ from the actual application of the change.
+    /// Applying the change may still fail even if this method succeeds.
+    ///
+    /// - Returns: A store of validation issues.
+    public func validate() -> Validation.Store {
+        let validation = Validation()
+        for changeSet in changeSets {
+            changeSet.validate(in: validation)
         }
-        let steps = builder()
-        let names = steps.map(\.name).joined(separator: "")
-        let hash = Insecure.MD5.hash(data: Data(names.utf8)).map {
-            String(format: "%02hhx", $0)
-        }.joined()
-        versions.append(Version(number: version, steps: steps, hash: hash))
+        return validation.store
     }
 
-    /// Executes the migration.
-    /// - Parameter db: Database to execute the migration on.
-    public func execute(on db: Database) async throws {
-        // Check if the migration log table exists.
-        let count = try await db.query("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?") { [tableName] handle in
-            var index = Int32()
-            try String.bind(to: handle, value: tableName, at: &index)
-        } step: { handle, _ in
-            var index = Int32()
-            return try Int.column(of: handle, at: &index)
-        }.first ?? 0
+    /// Migrates an opened database.
+    /// - Parameter database: Database to migrate.
+    @DatabaseActor
+    public func migrate(
+        database: Database
+    ) throws {
+        try executeMigration(on: database)
+    }
 
-        // Create the migration log table if it does not exist.
-        if count == 0 {
-            try await db.exec("""
-            CREATE TABLE "\(tableName)" (
-                "number" INTEGER PRIMARY KEY,
-                "hash" TEXT NOT NULL,
-                "started_at" DOUBLE NOT NULL,
-                "ended_at" DOUBLE NOT NULL
-            )
-            """)
-        }
-
-        // Fetch migrated versions.
-        let migratedVersions: [MigratedVersion] = try await db.query(
-            """
-            SELECT "number", "hash", "started_at", "ended_at" FROM "\(tableName)" ORDER BY "number" ASC
-            """,
-            step: { handle, _ in
-                var index = Int32()
-                return try MigratedVersion(
-                    number: Int.column(of: handle, at: &index),
-                    hash: String.column(of: handle, at: &index),
-                    startedAt: Date.column(of: handle, at: &index),
-                    endedAt: Date.column(of: handle, at: &index)
-                )
+    /// Migrates a database at a given URL.
+    ///
+    /// This method modifies the database directly and is not the safest way to migrate a database.
+    /// Migration errors can leave the database in an inconsistent state from which it may be difficult to recover.
+    ///
+    /// When performing a dry run, the database is copied to a temporary file and the migration is applied to
+    /// the copy. No changes are made to the original database.
+    ///
+    /// - Parameters:
+    ///   - databaseURL: URL of the database to migrate.
+    ///   - dryRun: Whether to perform a dry run.
+    @DatabaseActor
+    public func migrate(
+        databaseAt databaseURL: URL,
+        dryRun: Bool = false
+    ) async throws {
+        if dryRun {
+            let temporaryFileURL = if #available(iOS 16.0, tvOS 16.0, watchOS 9.0, macOS 13.0, *) {
+                URL(filePath: NSTemporaryDirectory()).appending(component: UUID().uuidString)
+            } else {
+                URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
             }
-        )
-
-        // Sort versions and check if they match the migrated versions.
-        var versions = if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *) {
-            versions.sorted(using: KeyPathComparator(\.number))
+            defer {
+                try? FileManager.default.removeItem(at: temporaryFileURL)
+            }
+            try await migrate(
+                databaseAt: databaseURL,
+                usingTemporaryFileAt: temporaryFileURL,
+                dryRun: true
+            )
         } else {
-            versions.sorted(by: { lhs, rhs in
-                lhs.number < rhs.number
-            })
+            try await executeMigration(databaseAt: databaseURL)
         }
-        for migratedVersion in migratedVersions {
-            guard let version = versions.first else {
-                throw DB4SwiftMigrationError(message: "there are more migrated versions than versions to migrate")
-            }
-            guard version.number == migratedVersion.number else {
-                throw DB4SwiftMigrationError(message: "migration order mismatch, got version \(migratedVersion.number), expected version \(version.number)")
-            }
-            guard version.hash == migratedVersion.hash else {
-                throw DB4SwiftMigrationError(message: "migration hash mismatch for version \(version.number)")
-            }
-            versions.removeFirst()
+    }
+
+    /// Migrates a database at a given URL using a temporary file.
+    ///
+    /// This method copies the database to a temporary file and migrates the copy. If the migration is successful,
+    /// the original database is replaced with the temporary file. If the migration fails, the temporary file is
+    /// left in place.
+    ///
+    /// When performing a dry run, the database is copied to the temporary file and the migration is applied to
+    /// the copy. No changes are made to the original database.
+    ///
+    /// - Parameters:
+    ///   - databaseURL: URL of the database to migrate.
+    ///   - temporaryFileURL: URL of the temporary file to use.
+    ///   - dryRun: Whether to perform a dry run.
+    @DatabaseActor
+    public func migrate(
+        databaseAt databaseURL: URL,
+        usingTemporaryFileAt temporaryFileURL: URL,
+        dryRun: Bool = false
+    ) async throws {
+        let fileManager = FileManager.default
+
+        let temporaryFilePath: String = if #available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *) {
+            temporaryFileURL.path(percentEncoded: false)
+        } else {
+            temporaryFileURL.path
         }
 
-        // Execute the remaining versions.
-        for version in versions {
-            let startedAt = Date()
-            for step in version.steps {
-                try await step.actions(db)
-            }
-            let endedAt = Date()
+        if fileManager.fileExists(atPath: temporaryFilePath) {
+            try fileManager.removeItem(at: temporaryFileURL)
+        }
 
-            try await db.exec(
-                """
-                INSERT INTO \(tableName) ("number", "hash", "started_at", "ended_at") VALUES (?, ?, ?, ?)
-                """,
-                bind: { handle in
-                    var index = Int32()
-                    try Int.bind(to: handle, value: version.number, at: &index)
-                    try String.bind(to: handle, value: version.hash, at: &index)
-                    try Date.bind(to: handle, value: startedAt, at: &index)
-                    try Date.bind(to: handle, value: endedAt, at: &index)
+        let databasePath: String = if #available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *) {
+            databaseURL.path(percentEncoded: false)
+        } else {
+            databaseURL.path
+        }
+
+        if fileManager.fileExists(atPath: databasePath) {
+            try fileManager.copyItem(at: databaseURL, to: temporaryFileURL)
+        }
+
+        try await executeMigration(databaseAt: temporaryFileURL)
+
+        if !dryRun {
+            if fileManager.fileExists(atPath: databasePath) {
+                try fileManager.removeItem(at: databaseURL)
+            }
+            try fileManager.moveItem(at: temporaryFileURL, to: databaseURL)
+        }
+    }
+
+    /// Migrates a database at a given URL.
+    /// - Parameter databaseURL: URL of the database to migrate.
+    @DatabaseActor
+    private func executeMigration(
+        databaseAt databaseURL: URL
+    ) async throws {
+        let db = try await Database.open(url: databaseURL)
+        try executeMigration(on: db)
+    }
+}
+
+extension Migration {
+    /// Name of the migration log table.
+    private static let tableName = "_relational_swift_migration_log"
+
+    /// Record of a change set migration.
+    private struct MigrationRecord {
+        /// Identifier of the change set.
+        let id: String
+        /// Order of the change set.
+        let order: Int
+        /// Time the change set was started.
+        let startedAt: Date
+        /// Time the change set was completed.
+        let completedAt: Date
+    }
+
+    /// Checks that the change set IDs are unique.
+    private func checkChangeSetUniqueIDs() throws {
+        var uniqueIDs = Set<String>()
+        for changeSet in changeSets {
+            if uniqueIDs.contains(changeSet.id) {
+                throw MigrationError.duplicateChangeSetID(changeSet.id)
+            }
+            uniqueIDs.insert(changeSet.id)
+        }
+    }
+
+    /// Executes the migration on a database.
+    /// - Parameter database: Database to migrate.
+    @DatabaseActor
+    private func executeMigration(
+        on database: Database
+    ) throws {
+        try checkChangeSetUniqueIDs()
+
+        try prepareMigrationTables(in: database)
+
+        // Read the migration records from the database.
+        var migrationRecords = try readMigrationRecords(from: database)
+        var nextAvailableIndex = 0
+
+        for changeSet in changeSets {
+            // If the change set should always run, apply it.
+            if changeSet.alwaysRun {
+                try changeSet.apply(to: database)
+                continue
+            }
+
+            // If the change set has already been applied, skip it.
+            if let migrationRecord = migrationRecords.first {
+                migrationRecords.removeFirst()
+
+                if migrationRecord.id == changeSet.id {
+                    nextAvailableIndex = migrationRecord.order + 1
+                    continue
+                } else {
+                    throw MigrationError.changeSetOrderMismatch(
+                        expectedID: changeSet.id,
+                        actualID: migrationRecord.id
+                    )
                 }
+            }
+
+            // Apply the change set and insert a record.
+            let startedAt = Date()
+            try changeSet.apply(to: database)
+            let completedAt = Date()
+
+            let record = MigrationRecord(
+                id: changeSet.id,
+                order: nextAvailableIndex,
+                startedAt: startedAt,
+                completedAt: completedAt
             )
+            try insertMigrationRecord(record, into: database)
+            nextAvailableIndex += 1
+        }
+    }
+
+    /// Prepares the migration tables in a database.
+    /// - Parameter database: Database to prepare.
+    @DatabaseActor
+    private func prepareMigrationTables(
+        in database: Database
+    ) throws {
+        try database.exec("""
+        CREATE TABLE IF NOT EXISTS \(Self.tableName) (
+            id TEXT PRIMARY KEY,
+            "order" INTEGER NOT NULL,
+            started_at TEXT NOT NULL,
+            completed_at TEXT NOT NULL
+        )
+        """)
+    }
+
+    /// Reads the migration records from a database.
+    /// - Parameter database: Database to read from.
+    /// - Returns: An array of migration records.
+    @DatabaseActor
+    private func readMigrationRecords(
+        from database: Database
+    ) throws -> [MigrationRecord] {
+        let rows = try database.query("""
+        SELECT id, "order", started_at, completed_at
+        FROM \(Self.tableName)
+        ORDER BY "order" ASC
+        """) { _ in } step: { stmt, _ in
+            var index: Int32 = 0
+            return try MigrationRecord(
+                id: String.column(of: stmt, at: &index),
+                order: Int.column(of: stmt, at: &index),
+                startedAt: Date.column(of: stmt, at: &index),
+                completedAt: Date.column(of: stmt, at: &index)
+            )
+        }
+        return rows
+    }
+
+    /// Inserts a migration record into a database.
+    /// - Parameters:
+    ///   - record: Record to insert.
+    ///   - database: Database to insert into.
+    @DatabaseActor
+    private func insertMigrationRecord(
+        _ record: MigrationRecord,
+        into database: Database
+    ) throws {
+        try database.exec("""
+        INSERT INTO \(Self.tableName) (id, "order", started_at, completed_at)
+        VALUES (?, ?, ?, ?)
+        """) { stmt in
+            var index: Int32 = 0
+            try record.id.bind(to: stmt, at: &index)
+            try record.order.bind(to: stmt, at: &index)
+            try record.startedAt.bind(to: stmt, at: &index)
+            try record.completedAt.bind(to: stmt, at: &index)
         }
     }
 }

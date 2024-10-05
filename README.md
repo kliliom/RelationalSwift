@@ -4,6 +4,9 @@ This is a library that provides a simple layer above SQLite for Swift.
 
 It uses modern Swift features (async/await, parameter packs, etc) and only compiles with Swift 6.
 
+> [!WARNING]
+> This library is under active development, until 1.0 release breaking changes might be made.
+
 ## Requirements
 
 - Swift 6.0 or later
@@ -17,7 +20,7 @@ It uses modern Swift features (async/await, parameter packs, etc) and only compi
 
 Import library:
 
-```
+```swift
 import RelationalSwift
 ```
 

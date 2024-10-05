@@ -18,10 +18,11 @@ public struct DatabaseHandle: ~Copyable, Sendable {
     }
 
     deinit {
-        let copy = ptr
-        Task {
-            await Global.shared.runLogError {
-                try check(sqlite3_close(copy), is: SQLITE_OK)
+        let result = sqlite3_close(ptr)
+        if result != SQLITE_OK {
+            let error = RelationalSwiftError(message: String(cString: sqlite3_errmsg(ptr)), code: result)
+            Task {
+                await Database.logger(error)
             }
         }
     }

@@ -6,190 +6,254 @@
 import Foundation
 import Testing
 
-import Interface
-import Migration
+@testable import Migration
 
-@Suite("Migration Tests")
+@Suite
 struct MigrationTests {
-    let step1SQL = """
-    CREATE TABLE Users (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL
-    )
-    """
-    let step2SQL = """
-    ALTER TABLE Users ADD COLUMN email TEXT DEFAULT NULL
-    """
-
-    @Test("Version with one Step")
-    func singleStepVersion() async throws {
-        let migration = Migration()
-
-        try migration.add(version: 1) {
-            Step(name: "Add users") { db in
-                try await db.exec(step1SQL)
-            }
-        }
-
-        let db = try await Database.openInMemory()
-        try await migration.execute(on: db)
-    }
-
-    @Test("Version with two Steps")
-    func multipleStepVersion() async throws {
-        let migration = Migration()
-
-        try migration.add(version: 1) {
-            Step(name: "Add users") { db in
-                try await db.exec(step1SQL)
-            }
-
-            Step(name: "Add email to users") { db in
-                try await db.exec(step2SQL)
-            }
-        }
-
-        let db = try await Database.openInMemory()
-        try await migration.execute(on: db)
-    }
-
-    @Test("Multiple versions")
-    func multipleVersions() async throws {
-        let migration = Migration()
-
-        try migration.add(version: 1) {
-            Step(name: "Add users") { db in
-                try await db.exec(step1SQL)
-            }
-        }
-
-        try migration.add(version: 2) {
-            Step(name: "Add email to users") { db in
-                try await db.exec(step2SQL)
-            }
-        }
-
-        let db = try await Database.openInMemory()
-        try await migration.execute(on: db)
-    }
-
-    @Test("Colliding versions")
-    func collidingVersions() async throws {
-        let migration = Migration()
-
-        try migration.add(version: 1) {
-            Step(name: "Add users") { db in
-                try await db.exec(step1SQL)
-            }
-        }
-
-        #expect(throws: DB4SwiftMigrationError(message: "migration version 1 already exists")) {
-            try migration.add(version: 1) {
-                Step(name: "Add email to users") { db in
-                    try await db.exec(step2SQL)
-                }
-            }
+    let changeSet1 = ChangeSet(id: "change set 1") {
+        CreateTable("test_table") {
+            Column("id", ofType: Int.self)
+                .primaryKey()
+            Column("name", ofType: String.self)
         }
     }
 
-    @Test("Multiple versions with swapped order")
-    func multipleVersionsSwappedOrder() async throws {
-        let migration = Migration()
-
-        try migration.add(version: 2) {
-            Step(name: "Add email to users") { db in
-                try await db.exec(step2SQL)
-            }
-        }
-
-        try migration.add(version: 1) {
-            Step(name: "Add users") { db in
-                try await db.exec(step1SQL)
-            }
-        }
-
-        let db = try await Database.openInMemory()
-        try await migration.execute(on: db)
+    let changeSet2 = ChangeSet(id: "change set 2") {
+        AlterTable("test_table")
+            .addColumn(Column("age", ofType: Int.self))
     }
 
-    @Test("Running multiple times")
-    func runningMultipleTimes() async throws {
-        let migration = Migration()
-
-        try migration.add(version: 1) {
-            Step(name: "Add users") { db in
-                try await db.exec(step1SQL)
-            }
-        }
-
-        let db = try await Database.openInMemory()
-        try await migration.execute(on: db)
-
-        try migration.add(version: 2) {
-            Step(name: "Add email to users") { db in
-                try await db.exec(step2SQL)
-            }
-        }
-
-        try await migration.execute(on: db)
+    let invalidChangeSet = ChangeSet(id: "invalid change set") {
+        DropTable("test_table")
+        AlterTable("test_table").dropColumn("non_existent_column")
     }
 
-    @Test("More migrated versions than versions to migrate")
-    func moreMigratedVersionsThanVersionsToMigrate() async throws {
-        var migration = Migration()
-        try migration.add(version: 1) {}
-        try migration.add(version: 2) {}
-        try migration.add(version: 3) {}
+    private func getColumnNames(from db: Database) async throws -> [String] {
+        try await db.query(
+            "PRAGMA table_info('test_table')",
+            step: { stmt, _ in
+                var index: Int32 = 1
+                return try String.column(of: stmt, at: &index)
+            }
+        )
+    }
 
-        let db = try await Database.openInMemory()
-        try await migration.execute(on: db)
-
-        migration = Migration()
-        try migration.add(version: 1) {}
-        try migration.add(version: 2) {}
-
-        await #expect(throws: DB4SwiftMigrationError(message: "there are more migrated versions than versions to migrate")) {
-            try await migration.execute(on: db)
+    var temporaryFileURL: URL {
+        if #available(iOS 16.0, tvOS 16.0, watchOS 9.0, macOS 13.0, *) {
+            URL(filePath: NSTemporaryDirectory()).appending(component: UUID().uuidString)
+        } else {
+            URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         }
     }
 
-    @Test("Running same versions with different versions")
-    func runningMultipleTimesWithDifferingVersions() async throws {
-        let migration = Migration()
-        try migration.add(version: 1) {}
-        try migration.add(version: 3) {}
+    @Test("Initializer")
+    func initializer() {
+        let migration = Migration(changeSets: [])
 
-        let db = try await Database.openInMemory()
-        try await migration.execute(on: db)
-
-        try migration.add(version: 2) {}
-
-        await #expect(throws: DB4SwiftMigrationError(message: "migration order mismatch, got version 3, expected version 2")) {
-            try await migration.execute(on: db)
-        }
+        #expect(migration.changeSets.isEmpty)
     }
 
-    @Test("Running same versions with different hashes")
-    func runningMultipleTimesWithDifferingHashes() async throws {
-        let migration1 = Migration()
-        try migration1.add(version: 1) {
-            Step(name: "Add users-1") { db in
-                try await db.exec(step1SQL)
-            }
+    @Test("Validate combines issues")
+    func validateCombinesIssues() throws {
+        let changeSet1 = ChangeSet(id: "id") {
+            AlterTable("").dropColumn("")
         }
-
-        let migration2 = Migration()
-        try migration2.add(version: 1) {
-            Step(name: "Add users-2") { db in
-                try await db.exec(step1SQL)
-            }
+        let changeSet2 = ChangeSet(id: "id") {
+            AlterTable("").dropColumn("")
         }
+        let migration = Migration(changeSets: [
+            changeSet1,
+            changeSet2,
+        ])
 
+        let validation = migration.validate()
+
+        try #require(validation.errors.count == 4)
+        let errors = validation.errors
+        #expect(errors[0].issue == .tableNameEmpty)
+        #expect(errors[1].issue == .columnNameEmpty)
+        #expect(errors[2].issue == .tableNameEmpty)
+        #expect(errors[3].issue == .columnNameEmpty)
+        #expect(errors[0].path == [.changeSet("id"), .alterTable("DROP COLUMN")])
+        #expect(errors[1].path == [.changeSet("id"), .alterTable("DROP COLUMN")])
+        #expect(errors[2].path == [.changeSet("id"), .alterTable("DROP COLUMN")])
+        #expect(errors[3].path == [.changeSet("id"), .alterTable("DROP COLUMN")])
+    }
+
+    @Test("Migrate database connection")
+    func migrateDatabaseConnection() async throws {
         let db = try await Database.openInMemory()
-        try await migration1.execute(on: db)
 
-        await #expect(throws: DB4SwiftMigrationError(message: "migration hash mismatch for version 1")) {
-            try await migration2.execute(on: db)
+        let migration1 = Migration(changeSets: [changeSet1])
+        try await migration1.migrate(database: db)
+
+        let migration2 = Migration(changeSets: [changeSet1, changeSet2])
+        try await migration2.migrate(database: db)
+
+        let columns = try await getColumnNames(from: db)
+        #expect(columns.count == 3)
+        #expect(columns.contains("id"))
+        #expect(columns.contains("name"))
+        #expect(columns.contains("age"))
+    }
+
+    @Test("Migrate database connection with failure")
+    func migrateDatabaseConnectionWithFailure() async throws {
+        let db = try await Database.openInMemory()
+
+        let migration1 = Migration(changeSets: [changeSet1])
+        try await migration1.migrate(database: db)
+
+        let migration2 = Migration(changeSets: [changeSet1, changeSet2, invalidChangeSet])
+        try await #require(throws: RelationalSwiftError(message: "no such table: test_table", code: 1)) {
+            try await migration2.migrate(database: db)
         }
+
+        let columns = try await getColumnNames(from: db)
+        #expect(columns.isEmpty)
+    }
+
+    @Test("Migrate database file")
+    func migrateDatabaseFile() async throws {
+        let fileURL = temporaryFileURL
+
+        let migration1 = Migration(changeSets: [changeSet1])
+        try await migration1.migrate(databaseAt: fileURL)
+
+        let migration2 = Migration(changeSets: [changeSet1, changeSet2])
+        try await migration2.migrate(databaseAt: fileURL)
+
+        let db = try await Database.open(url: fileURL)
+        let columns = try await getColumnNames(from: db)
+        #expect(columns.count == 3)
+        #expect(columns.contains("id"))
+        #expect(columns.contains("name"))
+        #expect(columns.contains("age"))
+    }
+
+    @Test("Migrate database file with failure")
+    func migrateDatabaseFileWithFailure() async throws {
+        let fileURL = temporaryFileURL
+
+        let migration1 = Migration(changeSets: [changeSet1])
+        try await migration1.migrate(databaseAt: fileURL)
+
+        let migration2 = Migration(changeSets: [changeSet1, changeSet2, invalidChangeSet])
+        try await #require(throws: RelationalSwiftError(message: "no such table: test_table", code: 1)) {
+            try await migration2.migrate(databaseAt: fileURL)
+        }
+
+        let db = try await Database.open(url: fileURL)
+        let columns = try await getColumnNames(from: db)
+        #expect(columns.isEmpty)
+    }
+
+    @Test("Migrate database file with dry run")
+    func migrateDatabaseFileWithDryRun() async throws {
+        let fileURL = temporaryFileURL
+
+        let migration1 = Migration(changeSets: [changeSet1])
+        try await migration1.migrate(databaseAt: fileURL)
+
+        let migration2 = Migration(changeSets: [changeSet1, changeSet2])
+        try await migration2.migrate(databaseAt: fileURL, dryRun: true)
+
+        let db = try await Database.open(url: fileURL)
+        let columns = try await getColumnNames(from: db)
+        #expect(columns.count == 2)
+        #expect(columns.contains("id"))
+        #expect(columns.contains("name"))
+    }
+
+    @Test("Migrate database file with dry run and failure")
+    func migrateDatabaseFileWithDryRunAndFailure() async throws {
+        let fileURL = temporaryFileURL
+
+        let migration1 = Migration(changeSets: [changeSet1])
+        try await migration1.migrate(databaseAt: fileURL)
+
+        let migration2 = Migration(changeSets: [changeSet1, changeSet2, invalidChangeSet])
+        try await #require(throws: RelationalSwiftError(message: "no such table: test_table", code: 1)) {
+            try await migration2.migrate(databaseAt: fileURL, dryRun: true)
+        }
+
+        let db = try await Database.open(url: fileURL)
+        let columns = try await getColumnNames(from: db)
+        #expect(columns.count == 2)
+        #expect(columns.contains("id"))
+        #expect(columns.contains("name"))
+    }
+
+    @Test("Migrate database file with temporary file")
+    func migrateDatabaseFileWithTemporaryFile() async throws {
+        let fileURL = temporaryFileURL
+
+        let migration1 = Migration(changeSets: [changeSet1])
+        try await migration1.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL)
+
+        let migration2 = Migration(changeSets: [changeSet1, changeSet2])
+        try await migration2.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL)
+
+        let db = try await Database.open(url: fileURL)
+        let columns = try await getColumnNames(from: db)
+        #expect(columns.count == 3)
+        #expect(columns.contains("id"))
+        #expect(columns.contains("name"))
+        #expect(columns.contains("age"))
+    }
+
+    @Test("Migrate database file with temporary file and failure")
+    func migrateDatabaseFileWithTemporaryFileAndFailure() async throws {
+        let fileURL = temporaryFileURL
+
+        let migration1 = Migration(changeSets: [changeSet1])
+        try await migration1.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL)
+
+        let migration2 = Migration(changeSets: [changeSet1, changeSet2, invalidChangeSet])
+        try await #require(throws: RelationalSwiftError(message: "no such table: test_table", code: 1)) {
+            try await migration2.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL)
+        }
+
+        let db = try await Database.open(url: fileURL)
+        let columns = try await getColumnNames(from: db)
+        #expect(columns.count == 2)
+        #expect(columns.contains("id"))
+        #expect(columns.contains("name"))
+    }
+
+    @Test("Migrate database file with temporary file and dry run")
+    func migrateDatabaseFileWithTemporaryFileAndDryRun() async throws {
+        let fileURL = temporaryFileURL
+
+        let migration1 = Migration(changeSets: [changeSet1])
+        try await migration1.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL)
+
+        let migration2 = Migration(changeSets: [changeSet1, changeSet2])
+        try await migration2.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL, dryRun: true)
+
+        let db = try await Database.open(url: fileURL)
+        let columns = try await getColumnNames(from: db)
+        #expect(columns.count == 2)
+        #expect(columns.contains("id"))
+        #expect(columns.contains("name"))
+    }
+
+    @Test("Migrate database file with temporary file and dry run and failure")
+    func migrateDatabaseFileWithTemporaryFileAndDryRunAndFailure() async throws {
+        let fileURL = temporaryFileURL
+
+        let migration1 = Migration(changeSets: [changeSet1])
+        try await migration1.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL)
+
+        let migration2 = Migration(changeSets: [changeSet1, changeSet2, invalidChangeSet])
+        try await #require(throws: RelationalSwiftError(message: "no such table: test_table", code: 1)) {
+            try await migration2.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL, dryRun: true)
+        }
+
+        let db = try await Database.open(url: fileURL)
+        let columns = try await getColumnNames(from: db)
+        #expect(columns.count == 2)
+        #expect(columns.contains("id"))
+        #expect(columns.contains("name"))
     }
 }
