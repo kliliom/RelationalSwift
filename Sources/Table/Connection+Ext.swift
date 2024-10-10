@@ -32,7 +32,7 @@ extension Database {
         binder: Binder
     ) throws {
         try exec(statement, bind: { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             try binder(stmt, &index)
         })
     }
@@ -48,7 +48,7 @@ extension Database {
         // It should be possible to skip this "packing into an array" trick
         // in the future, but current Swift 6 compiler has an issue with this
         // try exec(statement, bind: { stmt in
-        //     var index = Int32()
+        //     var index = ManagedIndex()
         //     try repeat (each bind).bind(to: stmt, at: &index)
         // })
 
@@ -56,7 +56,7 @@ extension Database {
         repeat (binders.append((each bind).asBinder))
         let captured = binders
         try exec(statement, bind: { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             try captured.forEach { try $0(stmt, &index) }
         })
     }
@@ -71,7 +71,7 @@ extension Database {
         columns _: repeat each Column
     ) throws -> [(repeat (each Column).ValueType)] {
         try query(statement, step: { stmt, _ in
-            var index = Int32()
+            var index = ManagedIndex()
             return try (repeat (each Column).ValueType.column(of: stmt, at: &index))
         })
     }
@@ -88,10 +88,10 @@ extension Database {
         columns _: repeat each Column
     ) throws -> [(repeat (each Column).ValueType)] {
         try query(statement, bind: { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             try binder(stmt, &index)
         }, step: { stmt, _ in
-            var index = Int32()
+            var index = ManagedIndex()
             return try (repeat (each Column).ValueType.column(of: stmt, at: &index))
         })
     }
@@ -108,10 +108,10 @@ extension Database {
         columns _: repeat each Column
     ) throws -> [(repeat (each Column).ValueType)] {
         try query(statement, bind: { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             repeat try (each Bind).bind(to: stmt, value: each bind, at: &index)
         }, step: { stmt, _ in
-            var index = Int32()
+            var index = ManagedIndex()
             return try (repeat (each Column).ValueType.column(of: stmt, at: &index))
         })
     }
@@ -128,7 +128,7 @@ extension Database {
         builder: @Sendable (repeat (each Column).ValueType) -> T
     ) throws -> [T] {
         try query(statement, step: { stmt, _ in
-            var index = Int32()
+            var index = ManagedIndex()
             return try builder(repeat (each Column).ValueType.column(of: stmt, at: &index))
         })
     }
@@ -147,10 +147,10 @@ extension Database {
         builder: @Sendable (repeat (each Column).ValueType) -> T
     ) throws -> [T] {
         try query(statement, bind: { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             try binder(stmt, &index)
         }, step: { stmt, _ in
-            var index = Int32()
+            var index = ManagedIndex()
             return try builder(repeat (each Column).ValueType.column(of: stmt, at: &index))
         })
     }
@@ -169,10 +169,10 @@ extension Database {
         builder: @Sendable (repeat (each Column).ValueType) -> T
     ) throws -> [T] {
         try query(statement, bind: { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             repeat try (each Bind).bind(to: stmt, value: each bind, at: &index)
         }, step: { stmt, _ in
-            var index = Int32()
+            var index = ManagedIndex()
             return try builder(repeat (each Column).ValueType.column(of: stmt, at: &index))
         })
     }
@@ -189,7 +189,7 @@ extension Database {
         step: @Sendable (_ stmt: borrowing StatementHandle) throws -> T
     ) throws -> [T] {
         try query(statement, bind: { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             try binder(stmt, &index)
         }, step: { stmt, _ in
             try step(stmt)
@@ -208,7 +208,7 @@ extension Database {
         step: @Sendable (_ stmt: borrowing StatementHandle) throws -> T
     ) throws -> [T] {
         try query(statement, bind: { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             repeat try (each Bind).bind(to: stmt, value: each bind, at: &index)
         }, step: { stmt, _ in
             try step(stmt)

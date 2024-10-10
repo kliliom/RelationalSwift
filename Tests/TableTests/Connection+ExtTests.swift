@@ -119,7 +119,7 @@ struct ConnectionExtTests {
             "SELECT id, name FROM test_table WHERE id = ?",
             binder: { try Int.bind(to: $0, value: 1, at: &$1) },
             step: {
-                var index = Int32()
+                var index = ManagedIndex()
                 let id = try Int.column(of: $0, at: &index)
                 let name = try String.column(of: $0, at: &index)
                 return "\(id)-\(name)"
@@ -134,7 +134,7 @@ struct ConnectionExtTests {
             "SELECT id, name FROM test_table WHERE id = ?",
             bind: 1,
             step: {
-                var index = Int32()
+                var index = ManagedIndex()
                 let id = try Int.column(of: $0, at: &index)
                 let name = try String.column(of: $0, at: &index)
                 return "\(id)-\(name)"

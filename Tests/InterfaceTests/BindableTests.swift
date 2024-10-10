@@ -16,28 +16,70 @@ struct BindableTests {
     ///   - sqlType: SQL name of the type.
     ///   - writeValue: Value to write on insert.
     ///   - readValue: Value to compare after select.
-    private func run(
+    private func run<ReadType: Bindable & Equatable>(
         sqlType: String,
         writeValue: some Bindable & Equatable,
-        readValue: some Bindable & Equatable
+        readValue: ReadType
     ) async throws {
-        let db = try await Database.openInMemory()
-        try await db.exec("CREATE TABLE x (col \(sqlType))")
-        try await db.exec(
-            "INSERT INTO x (col) VALUES (?)",
-            bind: { stmt in
-                var index = Int32()
-                try type(of: writeValue).bind(to: stmt, value: writeValue, at: &index)
-            }
-        )
-        let rows = try await db.query(
-            "SELECT col FROM x",
-            step: { stmt, _ in
-                var index = Int32()
-                return try type(of: readValue).column(of: stmt, at: &index)
-            }
-        )
-        #expect(rows == [readValue])
+        typealias Bind = @Sendable (_ handle: borrowing StatementHandle) throws -> Void
+        typealias Step = @Sendable (_ handle: borrowing StatementHandle, _ stop: inout Bool) throws -> ReadType
+
+        let bindStepPairs: [(Bind, Step)] = [
+            ( // Bind/column static functions of Bindable
+                { stmt in
+                    try type(of: writeValue).bind(to: stmt, value: writeValue, at: 1)
+                },
+                { stmt, _ in
+                    try type(of: readValue).column(of: stmt, at: 0)
+                }
+            ),
+            ( // Bind/column static functions of Bindable extension with managed index
+                { stmt in
+                    var index = ManagedIndex()
+                    try type(of: writeValue).bind(to: stmt, value: writeValue, at: &index)
+                },
+                { stmt, _ in
+                    var index = ManagedIndex()
+                    return try type(of: readValue).column(of: stmt, at: &index)
+                }
+            ),
+            ( // Bind/column member functions of Bindable extension
+                { stmt in
+                    try writeValue.bind(to: stmt, at: 1)
+                },
+                { stmt, _ in
+                    var value = readValue
+                    try value.column(of: stmt, at: 0)
+                    return value
+                }
+            ),
+            ( // Bind/column member functions of Bindable extension with managed index
+                { stmt in
+                    var index = ManagedIndex()
+                    try writeValue.bind(to: stmt, at: &index)
+                },
+                { stmt, _ in
+                    var index = ManagedIndex()
+                    var value = readValue
+                    try value.column(of: stmt, at: &index)
+                    return value
+                }
+            ),
+        ]
+
+        for bindStepPair in bindStepPairs {
+            let db = try await Database.openInMemory()
+            try await db.exec("CREATE TABLE x (col \(sqlType))")
+            try await db.exec(
+                "INSERT INTO x (col) VALUES (?)",
+                bind: bindStepPair.0
+            )
+            let rows = try await db.query(
+                "SELECT col FROM x",
+                step: bindStepPair.1
+            )
+            #expect(rows == [readValue])
+        }
     }
 
     /// Runs statements that tests the type binding for `bind` and `column`.

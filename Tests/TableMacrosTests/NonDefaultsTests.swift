@@ -99,7 +99,7 @@ final class NonDefaultsTests: XCTestCase {
                 }
 
                 extension Contact: RelationalSwift.Table {
-                    static func read(from stmt: borrowing StatementHandle, startingAt index: inout Int32) throws -> Contact {
+                    static func read(from stmt: borrowing StatementHandle, startingAt index: inout ManagedIndex) throws -> Contact {
                         Contact(
                             id: try Int32.column(of: stmt, at: &index),
                             name: try String?.column(of: stmt, at: &index),

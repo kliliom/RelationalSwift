@@ -51,7 +51,7 @@ struct DefaultsTests {
             "SELECT * FROM TestEntry",
             bind: { _ in },
             step: { stmt, _ in
-                var index = Int32()
+                var index = ManagedIndex()
                 return try TestEntry.read(from: stmt, startingAt: &index)
             }
         )

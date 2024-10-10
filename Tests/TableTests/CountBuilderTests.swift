@@ -40,8 +40,8 @@ struct CountBuilderTests {
 
         let count = try await db.query(
             statement,
-            bind: { stmt in var index = Int32(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = Int32(); return try Int.column(of: stmt, at: &index) }
+            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
+            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
         ).first ?? 0
         #expect(count == 3)
     }
@@ -62,8 +62,8 @@ struct CountBuilderTests {
 
         let count = try await db.query(
             statement,
-            bind: { stmt in var index = Int32(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = Int32(); return try Int.column(of: stmt, at: &index) }
+            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
+            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
         ).first ?? 0
         #expect(count == 3)
     }
@@ -85,8 +85,8 @@ struct CountBuilderTests {
 
         let count = try await db.query(
             statement,
-            bind: { stmt in var index = Int32(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = Int32(); return try Int.column(of: stmt, at: &index) }
+            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
+            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
         ).first ?? 0
         #expect(count == 2)
     }
@@ -107,8 +107,8 @@ struct CountBuilderTests {
 
         let count = try await db.query(
             statement,
-            bind: { stmt in var index = Int32(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = Int32(); return try Int.column(of: stmt, at: &index) }
+            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
+            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
         ).first ?? 0
         #expect(count == 1)
     }
