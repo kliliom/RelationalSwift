@@ -19,7 +19,7 @@ public protocol Table<TableRefType>: Sendable {
     ///   - stmt: Statement handle.
     ///   - index: Starting index to read from.
     /// - Returns: Row.
-    static func read(from stmt: borrowing StatementHandle, startingAt index: inout Int32) throws -> Self
+    static func read(from stmt: borrowing StatementHandle, startingAt index: inout ManagedIndex) throws -> Self
 
     /// Reads a row from the database.
     /// - Parameter rowID: Row ID.
@@ -54,7 +54,7 @@ extension Database {
         try exec(
             statement,
             bind: { stmt in
-                var index = Int32()
+                var index = ManagedIndex()
                 try binder(stmt, &index)
             }
         )
@@ -68,7 +68,7 @@ extension Database {
         try exec(
             statement,
             bind: { stmt in
-                var index = Int32()
+                var index = ManagedIndex()
                 try binder(stmt, &index)
             }
         )
@@ -78,11 +78,11 @@ extension Database {
             let rows = try query(
                 statement,
                 bind: { stmt in
-                    var index = Int32()
+                    var index = ManagedIndex()
                     try binder(stmt, &index)
                 },
                 step: { stmt, _ in
-                    var index = Int32()
+                    var index = ManagedIndex()
                     return try T.read(from: stmt, startingAt: &index)
                 }
             )
@@ -100,7 +100,7 @@ extension Database {
         try exec(
             statement,
             bind: { stmt in
-                var index = Int32()
+                var index = ManagedIndex()
                 try binder(stmt, &index)
             }
         )
@@ -113,7 +113,7 @@ extension Database {
         try exec(
             statement,
             bind: { stmt in
-                var index = Int32()
+                var index = ManagedIndex()
                 try binder(stmt, &index)
             }
         )

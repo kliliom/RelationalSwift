@@ -47,8 +47,8 @@ struct SelectBuilderTests {
 
         let rows = try await db.query(
             statement,
-            bind: { stmt in var index = Int32(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = Int32(); return try Int.column(of: stmt, at: &index) }
+            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
+            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
         )
         #expect(rows == [1, 4, 7])
     }
@@ -70,9 +70,9 @@ struct SelectBuilderTests {
 
         let rows = try await db.query(
             statement,
-            bind: { stmt in var index = Int32(); try binder(stmt, &index) },
+            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
             step: { stmt, _ in
-                var index = Int32()
+                var index = ManagedIndex()
                 return try Int.column(of: stmt, at: &index) + Int.column(of: stmt, at: &index)
             }
         )
@@ -96,8 +96,8 @@ struct SelectBuilderTests {
 
         let rows = try await db.query(
             statement,
-            bind: { stmt in var index = Int32(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = Int32(); return try Int.column(of: stmt, at: &index) }
+            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
+            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
         )
         #expect(rows == [4, 7])
     }
@@ -119,8 +119,8 @@ struct SelectBuilderTests {
 
         let rows = try await db.query(
             statement,
-            bind: { stmt in var index = Int32(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = Int32(); return try Int.column(of: stmt, at: &index) }
+            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
+            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
         )
         #expect(rows == [1, 4])
     }
@@ -142,8 +142,8 @@ struct SelectBuilderTests {
 
         let rows = try await db.query(
             statement,
-            bind: { stmt in var index = Int32(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = Int32(); return try Int.column(of: stmt, at: &index) }
+            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
+            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
         )
         #expect(rows == [7])
     }
@@ -165,8 +165,8 @@ struct SelectBuilderTests {
 
         let rows = try await db.query(
             statement,
-            bind: { stmt in var index = Int32(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = Int32(); return try Int.column(of: stmt, at: &index) }
+            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
+            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
         )
         #expect(rows == [4])
     }

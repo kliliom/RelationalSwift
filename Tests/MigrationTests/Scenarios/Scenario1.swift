@@ -90,11 +90,11 @@ func migrateScenario1() async throws {
         WHERE ua.user_id = ?
         """,
         bind: { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             try userID1.bind(to: stmt, at: &index)
         },
         step: { stmt, _ in
-            var index: Int32 = 0
+            var index = ManagedIndex()
             let id = try Int.column(of: stmt, at: &index)
             let addressLine1 = try String.column(of: stmt, at: &index)
             let addressLine2 = try String?.column(of: stmt, at: &index)

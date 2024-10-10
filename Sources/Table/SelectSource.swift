@@ -90,7 +90,7 @@ public struct SelectSource<T: TableRef> {
         )
         let database = database
         return try await database.query(select.statement(), binder: select.binder) { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             return try T.TableType.read(from: stmt, startingAt: &index)
         }
     }
@@ -137,7 +137,7 @@ public struct SelectSource<T: TableRef> {
         )
         let database = database
         return try await database.query(stmt.statement(), binder: stmt.binder) { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             return try Int64.column(of: stmt, at: &index)
         }.first ?? 0
     }
@@ -151,7 +151,7 @@ public struct SelectSource<T: TableRef> {
         )
         let database = database
         return try await database.query(stmt.statement(), binder: stmt.binder) { stmt in
-            var index = Int32()
+            var index = ManagedIndex()
             return try Int64.column(of: stmt, at: &index)
         }.first ?? 0
     }

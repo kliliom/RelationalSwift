@@ -55,8 +55,7 @@ struct AddColumnTests {
         let columns = try await db.query(
             "PRAGMA table_info('test_table')",
             step: { stmt, _ in
-                var index: Int32 = 1
-                return try String.column(of: stmt, at: &index)
+                try String.column(of: stmt, at: 1)
             }
         )
         #expect(columns.count == 2)

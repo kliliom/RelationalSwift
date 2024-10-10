@@ -245,7 +245,7 @@ extension Migration {
         FROM \(Self.tableName)
         ORDER BY "order" ASC
         """) { _ in } step: { stmt, _ in
-            var index: Int32 = 0
+            var index = ManagedIndex()
             return try MigrationRecord(
                 id: String.column(of: stmt, at: &index),
                 order: Int.column(of: stmt, at: &index),
@@ -269,7 +269,7 @@ extension Migration {
         INSERT INTO \(Self.tableName) (id, "order", started_at, completed_at)
         VALUES (?, ?, ?, ?)
         """) { stmt in
-            var index: Int32 = 0
+            var index = ManagedIndex()
             try record.id.bind(to: stmt, at: &index)
             try record.order.bind(to: stmt, at: &index)
             try record.startedAt.bind(to: stmt, at: &index)

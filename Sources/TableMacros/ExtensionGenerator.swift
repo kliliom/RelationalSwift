@@ -17,7 +17,7 @@ struct ExtensionGenerator {
             .joined(separator: ",\n")
 
         return DeclSyntax(stringLiteral: """
-        static func read(from stmt: borrowing StatementHandle, startingAt index: inout Int32) throws -> \(table.codeName) {
+        static func read(from stmt: borrowing StatementHandle, startingAt index: inout ManagedIndex) throws -> \(table.codeName) {
             \(table.codeName)(
                 \(fields)
             )
