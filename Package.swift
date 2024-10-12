@@ -65,7 +65,7 @@ var package = Package(
         ),
         .testTarget(
             name: "MigrationTests",
-            dependencies: ["Migration", "Table"]
+            dependencies: ["Migration"]
         ),
 
         // RelationalSwift

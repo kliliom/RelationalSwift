@@ -130,18 +130,66 @@ extension Database {
         return StatementHandle(dbPtr: db.ptr, stmtPtr: ptr)
     }
 
+    /// Executes a statement.
+    /// - Parameter statement: Statement to execute.
+    public func exec(
+        _ statement: String
+    ) throws {
+        let stmt = try prepare(statement: statement)
+
+        try check(sqlite3_step(stmt.stmtPtr), db: stmt.dbPtr, is: SQLITE_DONE)
+    }
+
     /// Executes a statement, assuming it returns exactly one row.
     /// - Parameters:
     ///   - statement: The statement to execute.
     ///   - bind: A closure that binds values to the statement.
     public func exec(
         _ statement: String,
-        bind: @Sendable (_ handle: borrowing StatementHandle) throws -> Void = { _ in }
+        bind: @Sendable (_ handle: borrowing StatementHandle) throws -> Void
     ) throws {
         let stmt = try prepare(statement: statement)
         try bind(stmt)
 
         try check(sqlite3_step(stmt.stmtPtr), db: stmt.dbPtr, is: SQLITE_DONE)
+    }
+
+    /// Executes a statement.
+    /// - Parameters:
+    ///   - statement: Statement to execute.
+    ///   - binder: Value binder.
+    public func exec(
+        _ statement: String,
+        binder: Binder
+    ) throws {
+        try exec(statement, bind: { stmt in
+            var index = ManagedIndex()
+            try binder(stmt, &index)
+        })
+    }
+
+    /// Executes a statement.
+    /// - Parameters:
+    ///   - statement: Statement to execute.
+    ///   - bind: Values to bind.
+    public func exec<each Bind: Bindable>(
+        _ statement: String,
+        bind: repeat each Bind
+    ) throws {
+        // It should be possible to skip this "packing into an array" trick
+        // in the future, but current Swift 6 compiler has an issue with this
+        // try exec(statement, bind: { stmt in
+        //     var index = ManagedIndex()
+        //     try repeat (each bind).bind(to: stmt, at: &index)
+        // })
+
+        var binders = [Binder]()
+        repeat (binders.append((each bind).asBinder))
+        let captured = binders
+        try exec(statement, bind: { stmt in
+            var index = ManagedIndex()
+            try captured.forEach { try $0(stmt, &index) }
+        })
     }
 
     /// Queries a statement, assuming it returns zero or more rows.

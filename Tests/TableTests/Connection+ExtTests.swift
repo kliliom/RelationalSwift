@@ -27,28 +27,6 @@ struct ConnectionExtTests {
         try await db.exec("INSERT INTO test_table (name) VALUES ('a'), ('b'), ('c')")
     }
 
-    @Test("db.exec(_:)")
-    func exec() async throws {
-        try await db.exec("UPDATE test_table SET name = 'a2' WHERE id = 1")
-
-        let rows = try await db.query("SELECT name FROM test_table", columns: TestEntry.table.name)
-        #expect(rows == ["a2", "b", "c"])
-    }
-
-    @Test("db.exec(_:bind:)")
-    func execBind() async throws {
-        try await db.exec(
-            "UPDATE test_table SET name = 'a2' WHERE id = ?",
-            bind: 1
-        )
-
-        let rows = try await db.query(
-            "SELECT name FROM test_table",
-            columns: TestEntry.table.name
-        )
-        #expect(rows == ["a2", "b", "c"])
-    }
-
     @Test("db.query(_:columns:)")
     func queryColumns() async throws {
         let rows = try await db.query(

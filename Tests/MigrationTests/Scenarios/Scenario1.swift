@@ -7,7 +7,6 @@ import Foundation
 import Testing
 
 import Migration
-import Table
 
 private enum AddressType: String {
     case home

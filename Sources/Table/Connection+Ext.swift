@@ -6,61 +6,7 @@
 import Foundation
 import Interface
 
-extension Bindable {
-    var asBinder: Binder {
-        { stmt, index in
-            try Self.bind(to: stmt, value: self, at: &index)
-        }
-    }
-}
-
 extension Database {
-    /// Executes a statement.
-    /// - Parameter statement: Statement to execute.
-    public func exec(
-        _ statement: String
-    ) throws {
-        try exec(statement, bind: { _ in })
-    }
-
-    /// Executes a statement.
-    /// - Parameters:
-    ///   - statement: Statement to execute.
-    ///   - binder: Value binder.
-    public func exec(
-        _ statement: String,
-        binder: Binder
-    ) throws {
-        try exec(statement, bind: { stmt in
-            var index = ManagedIndex()
-            try binder(stmt, &index)
-        })
-    }
-
-    /// Executes a statement.
-    /// - Parameters:
-    ///   - statement: Statement to execute.
-    ///   - bind: Values to bind.
-    public func exec<each Bind: Bindable>(
-        _ statement: String,
-        bind: repeat each Bind
-    ) throws {
-        // It should be possible to skip this "packing into an array" trick
-        // in the future, but current Swift 6 compiler has an issue with this
-        // try exec(statement, bind: { stmt in
-        //     var index = ManagedIndex()
-        //     try repeat (each bind).bind(to: stmt, at: &index)
-        // })
-
-        var binders = [Binder]()
-        repeat (binders.append((each bind).asBinder))
-        let captured = binders
-        try exec(statement, bind: { stmt in
-            var index = ManagedIndex()
-            try captured.forEach { try $0(stmt, &index) }
-        })
-    }
-
     /// Queries a statement.
     /// - Parameters:
     ///   - statement: Statement to execute.

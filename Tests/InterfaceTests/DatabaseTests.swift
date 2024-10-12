@@ -32,6 +32,64 @@ struct DatabaseTests {
         try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
     }
 
+    @Test("db.exec(_:bind:{ stmt in })")
+    func execBindBlock() async throws {
+        let db = try await Database.openInMemory()
+
+        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
+        try await db.exec("INSERT INTO x (id) VALUES (1)")
+        try await db.exec(
+            "UPDATE x SET id = 2 WHERE id = ?",
+            bind: { stmt in
+                try Int.bind(to: stmt, value: 1, at: 1)
+            }
+        )
+
+        let rows = try await db.query(
+            "SELECT id FROM x",
+            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
+        )
+        #expect(rows == [2])
+    }
+
+    @Test("db.exec(_:bind:...)")
+    func execBindValue() async throws {
+        let db = try await Database.openInMemory()
+
+        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
+        try await db.exec("INSERT INTO x (id) VALUES (1)")
+        try await db.exec(
+            "UPDATE x SET id = 2 WHERE id = ?",
+            bind: 1
+        )
+
+        let rows = try await db.query(
+            "SELECT id FROM x",
+            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
+        )
+        #expect(rows == [2])
+    }
+
+    @Test("db.exec(_:binder:)")
+    func execBinder() async throws {
+        let db = try await Database.openInMemory()
+
+        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
+        try await db.exec("INSERT INTO x (id) VALUES (1)")
+        try await db.exec(
+            "UPDATE x SET id = 2 WHERE id = ?",
+            binder: { stmt, index in
+                try Int.bind(to: stmt, value: 1, at: &index)
+            }
+        )
+
+        let rows = try await db.query(
+            "SELECT id FROM x",
+            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
+        )
+        #expect(rows == [2])
+    }
+
     @Test("db.query(_:bind:step:) throws")
     func query() async throws {
         let db = try await Database.openInMemory()
@@ -95,5 +153,18 @@ struct DatabaseTests {
         await #expect(throws: RelationalSwiftError(message: "can not open non-file url", code: -1)) {
             _ = try await Database.open(url: URL(string: "https://www.google.com")!)
         }
+    }
+
+    @Test("Last inserted row id")
+    func lastInsertedRowID() async throws {
+        let db = try await Database.openInMemory()
+
+        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
+
+        await db.clearLastInsertedRowID()
+        #expect(await db.lastInsertedRowID() == nil)
+
+        try await db.exec("INSERT INTO x (id) VALUES (1)")
+        #expect(await db.lastInsertedRowID() != nil)
     }
 }
