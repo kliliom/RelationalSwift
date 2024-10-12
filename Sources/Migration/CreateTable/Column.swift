@@ -38,6 +38,31 @@ public struct Column: SQLConvertible, Sendable {
         }
     }
 
+    /// Initializes a new column.
+    ///
+    /// The storage type is automatically determined based on the type of the column, but can be overridden
+    /// by providing a custom storage type.
+    ///
+    /// - Parameters:
+    ///   - name: Name of the column.
+    ///   - type: Type of the data bound to the column.
+    ///   - storage: Storage type of the column.
+    ///   - defaultValue: Default value of the column.
+    public init<T: Bindable>(_ name: String, ofType type: T.Type, storage: ColumnStorage? = nil, defaultValue: T) {
+        self.name = name
+        self.type = type
+        self.storage = storage ?? Self.getDefaultStorage(for: type)
+
+        if !(type is any OptionalProtocol.Type) {
+            constraints.append(NotNullColumnConstraint())
+        }
+        do {
+            try constraints.append(DefaultColumnConstraint(unsafeValue: defaultValue.asSQLLiteral()))
+        } catch {
+            fatalError("Default value of type \(T.self) is not supported. \(error)")
+        }
+    }
+
     /// Validates the column.
     /// - Parameter validation: Validation to use.
     func validate(in validation: Validation) {

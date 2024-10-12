@@ -29,6 +29,10 @@ public protocol Bindable: Sendable {
     ///   - index: The index of the column to extract the value from. First index is 0.
     /// - Returns: The extracted value.
     static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self
+
+    /// Converts the value to an SQL literal.
+    /// - Returns: The SQL literal representation of the value.
+    func asSQLLiteral() throws -> String
 }
 
 extension Bindable {
@@ -105,6 +109,10 @@ extension Int: Bindable {
     public static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Int {
         try Int(Int64.column(of: stmt, at: index))
     }
+
+    public func asSQLLiteral() throws -> String {
+        "\(self)"
+    }
 }
 
 extension Int32: Bindable {
@@ -114,6 +122,10 @@ extension Int32: Bindable {
 
     public static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self {
         sqlite3_column_int(stmt.stmtPtr, index)
+    }
+
+    public func asSQLLiteral() throws -> String {
+        "\(self)"
     }
 }
 
@@ -125,6 +137,10 @@ extension Int64: Bindable {
     public static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self {
         sqlite3_column_int64(stmt.stmtPtr, index)
     }
+
+    public func asSQLLiteral() throws -> String {
+        "\(self)"
+    }
 }
 
 extension Bool: Bindable {
@@ -134,6 +150,10 @@ extension Bool: Bindable {
 
     public static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self {
         try Int.column(of: stmt, at: index) > 0
+    }
+
+    public func asSQLLiteral() throws -> String {
+        "\(self ? "TRUE" : "FALSE")"
     }
 }
 
@@ -145,6 +165,10 @@ extension Float: Bindable {
     public static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self {
         Float(sqlite3_column_double(stmt.stmtPtr, index))
     }
+
+    public func asSQLLiteral() throws -> String {
+        "\(self)"
+    }
 }
 
 extension Double: Bindable {
@@ -154,6 +178,10 @@ extension Double: Bindable {
 
     public static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self {
         sqlite3_column_double(stmt.stmtPtr, index)
+    }
+
+    public func asSQLLiteral() throws -> String {
+        "\(self)"
     }
 }
 
@@ -180,6 +208,11 @@ extension String: Bindable {
             throw RelationalSwiftError(message: "sqlite3_column_text returned nil", code: -1)
         }
     }
+
+    public func asSQLLiteral() throws -> String {
+        let escaped = replacingOccurrences(of: "'", with: "''")
+        return "'\(escaped)'"
+    }
 }
 
 extension UUID: Bindable {
@@ -196,6 +229,11 @@ extension UUID: Bindable {
         } else {
             throw RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)
         }
+    }
+
+    public func asSQLLiteral() throws -> String {
+        let bytes = withUnsafeBytes(of: uuid) { Data($0) }
+        return try bytes.asSQLLiteral()
     }
 }
 
@@ -214,6 +252,11 @@ extension Data: Bindable {
             throw RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)
         }
     }
+
+    public func asSQLLiteral() throws -> String {
+        let hex = map { String(format: "%02x", $0) }.joined()
+        return "X'\(hex)'"
+    }
 }
 
 extension Date: Bindable {
@@ -223,6 +266,10 @@ extension Date: Bindable {
 
     public static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self {
         Date(timeIntervalSince1970: sqlite3_column_double(stmt.stmtPtr, index))
+    }
+
+    public func asSQLLiteral() throws -> String {
+        "\(timeIntervalSince1970)"
     }
 }
 
@@ -245,6 +292,13 @@ extension Bindable where Self: Codable {
             throw RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)
         }
     }
+
+    public func asSQLLiteral() throws -> String {
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(self)
+        let hex = data.map { String(format: "%02x", $0) }.joined()
+        return "X'\(hex)'"
+    }
 }
 
 extension Optional: Bindable where Wrapped: Bindable {
@@ -261,6 +315,15 @@ extension Optional: Bindable where Wrapped: Bindable {
             .none
         } else {
             try Wrapped.column(of: stmt, at: index)
+        }
+    }
+
+    public func asSQLLiteral() throws -> String {
+        switch self {
+        case .none:
+            "NULL"
+        case let .some(value):
+            try value.asSQLLiteral()
         }
     }
 }

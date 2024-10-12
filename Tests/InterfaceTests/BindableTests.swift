@@ -97,6 +97,7 @@ struct BindableTests {
         try await run(sqlType: "INTEGER", value: Int(value))
         try await run(sqlType: "INTEGER", value: Optional<Int>.some(value))
         try await run(sqlType: "INTEGER", value: Optional<Int>.none)
+        #expect(try value.asSQLLiteral() == "-63")
     }
 
     @Test("Type: Int32")
@@ -105,6 +106,7 @@ struct BindableTests {
         try await run(sqlType: "INTEGER", value: Int32(value))
         try await run(sqlType: "INTEGER", value: Optional<Int32>.some(value))
         try await run(sqlType: "INTEGER", value: Optional<Int32>.none)
+        #expect(try value.asSQLLiteral() == "-63")
     }
 
     @Test("Type: Int64")
@@ -113,6 +115,7 @@ struct BindableTests {
         try await run(sqlType: "INTEGER", value: Int64(value))
         try await run(sqlType: "INTEGER", value: Optional<Int64>.some(value))
         try await run(sqlType: "INTEGER", value: Optional<Int64>.none)
+        #expect(try value.asSQLLiteral() == "-63")
     }
 
     @Test("Type: Bool")
@@ -122,27 +125,35 @@ struct BindableTests {
         try await run(sqlType: "INTEGER", value: Optional<Bool>.some(true))
         try await run(sqlType: "INTEGER", value: Optional<Bool>.some(false))
         try await run(sqlType: "INTEGER", value: Optional<Bool>.none)
+        #expect(try true.asSQLLiteral() == "TRUE")
+        #expect(try false.asSQLLiteral() == "FALSE")
     }
 
     @Test("Type: Float")
     func typeSupportFloat() async throws {
-        try await run(sqlType: "FLOAT", value: Float(132.456))
-        try await run(sqlType: "FLOAT", value: Optional<Float>.some(132.456))
+        let value: Float = 132.456
+        try await run(sqlType: "FLOAT", value: Float(value))
+        try await run(sqlType: "FLOAT", value: Optional<Float>.some(value))
         try await run(sqlType: "FLOAT", value: Optional<Float>.none)
+        #expect(try value.asSQLLiteral() == "132.456")
     }
 
     @Test("Type: Double")
     func typeSupportDouble() async throws {
-        try await run(sqlType: "DOUBLE", value: Double(132.456))
-        try await run(sqlType: "DOUBLE", value: Optional<Double>.some(132.456))
+        let value = 132.456
+        try await run(sqlType: "DOUBLE", value: Double(value))
+        try await run(sqlType: "DOUBLE", value: Optional<Double>.some(value))
         try await run(sqlType: "DOUBLE", value: Optional<Double>.none)
+        #expect(try value.asSQLLiteral() == "132.456")
     }
 
     @Test("Type: String")
     func typeSupportString() async throws {
-        try await run(sqlType: "VARCHAR(255)", value: "hi")
-        try await run(sqlType: "VARCHAR(255)", value: Optional<String>.some("hi"))
+        let value = "what's up?"
+        try await run(sqlType: "VARCHAR(255)", value: String(value))
+        try await run(sqlType: "VARCHAR(255)", value: Optional<String>.some(value))
         try await run(sqlType: "VARCHAR(255)", value: Optional<String>.none)
+        #expect(try value.asSQLLiteral() == "'what''s up?'")
 
         await #expect(throws: RelationalSwiftError(message: "sqlite3_column_text returned nil", code: -1)) {
             try await run(sqlType: "VARCHAR(255)", writeValue: Optional<String>.none, readValue: "")
@@ -155,6 +166,7 @@ struct BindableTests {
         try await run(sqlType: "BLOB", value: value)
         try await run(sqlType: "BLOB", value: Optional<UUID>.some(value))
         try await run(sqlType: "BLOB", value: Optional<UUID>.none)
+        #expect(try value.asSQLLiteral() == "X'70e5bf82563d416db0a1a06b626040c8'")
 
         await #expect(throws: RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)) {
             try await run(sqlType: "BLOB", writeValue: Optional<UUID>.none, readValue: UUID())
@@ -167,6 +179,7 @@ struct BindableTests {
         try await run(sqlType: "BLOB", value: value)
         try await run(sqlType: "BLOB", value: Optional<Data>.some(value))
         try await run(sqlType: "BLOB", value: Optional<Data>.none)
+        #expect(try value.asSQLLiteral() == "X'd4f54d1089c2d8e04c30d64fb2cf5050e574aeee55e1bb0ef3c8df76aa8bdaa6e31d31f23edc0936fc26be9d98c97229b01c3d31021c4e02b63da89d01245af8ef583153dbe4d0421834f694'")
 
         await #expect(throws: RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)) {
             try await run(sqlType: "BLOB", writeValue: Optional<Data>.none, readValue: Data())
@@ -179,14 +192,16 @@ struct BindableTests {
         try await run(sqlType: "DOUBLE", value: value)
         try await run(sqlType: "DOUBLE", value: Optional<Date>.some(value))
         try await run(sqlType: "DOUBLE", value: Optional<Date>.none)
+        #expect(try value.asSQLLiteral() == "98431.02100002766")
     }
 
     @Test("Type: Codable")
     func typeSupportCodable() async throws {
         let value = CGRect(x: 10, y: 20, width: 30, height: 40)
-        try await run(sqlType: "TEXT", value: value)
-        try await run(sqlType: "TEXT", value: Optional<CGRect>.some(value))
-        try await run(sqlType: "TEXT", value: Optional<CGRect>.none)
+        try await run(sqlType: "BLOB", value: value)
+        try await run(sqlType: "BLOB", value: Optional<CGRect>.some(value))
+        try await run(sqlType: "BLOB", value: Optional<CGRect>.none)
+        #expect(try value.asSQLLiteral() == "X\'5b5b31302c32305d2c5b33302c34305d5d\'")
 
         await #expect(throws: RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)) {
             try await run(sqlType: "BLOB", writeValue: Optional<CGRect>.none, readValue: CGRect())
@@ -199,6 +214,7 @@ struct BindableTests {
         try await run(sqlType: "BLOB", value: value)
         try await run(sqlType: "BLOB", value: Optional<[Int]>.some(value))
         try await run(sqlType: "BLOB", value: Optional<[Int]>.none)
+        #expect(try value.asSQLLiteral() == "X\'5b312c322c335d\'")
 
         await #expect(throws: RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)) {
             try await run(sqlType: "BLOB", writeValue: Optional<[Int]>.none, readValue: [Int]())
@@ -210,11 +226,16 @@ struct BindableTests {
         let value = [
             "a": 10,
             "b": 20,
-            "c": 30,
         ]
         try await run(sqlType: "BLOB", value: value)
         try await run(sqlType: "BLOB", value: Optional<[String: Int]>.some(value))
         try await run(sqlType: "BLOB", value: Optional<[String: Int]>.none)
+
+        let validLiterals = [
+            "X\'7b2261223a31302c2262223a32307d\'",
+            "X\'7b2262223a32302c2261223a31307d\'",
+        ]
+        #expect(try validLiterals.contains(value.asSQLLiteral()))
 
         await #expect(throws: RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)) {
             try await run(sqlType: "BLOB", writeValue: Optional<[String: Int]>.none, readValue: [Int]())
@@ -231,6 +252,7 @@ struct BindableTests {
         try await run(sqlType: "BLOB", value: value)
         try await run(sqlType: "BLOB", value: Optional<[CGPoint]>.some(value))
         try await run(sqlType: "BLOB", value: Optional<[CGPoint]>.none)
+        #expect(try value.asSQLLiteral() == "X\'5b5b31302c32305d2c5b33302c34305d2c5b35302c36305d5d\'")
 
         await #expect(throws: RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)) {
             try await run(sqlType: "BLOB", writeValue: Optional<[CGPoint]>.none, readValue: [Int]())
@@ -242,11 +264,16 @@ struct BindableTests {
         let value = [
             "a": CGPoint(x: 10, y: 20),
             "b": CGPoint(x: 30, y: 40),
-            "c": CGPoint(x: 50, y: 60),
         ]
         try await run(sqlType: "BLOB", value: value)
         try await run(sqlType: "BLOB", value: Optional<[String: CGPoint]>.some(value))
         try await run(sqlType: "BLOB", value: Optional<[String: CGPoint]>.none)
+
+        let validLiterals = [
+            "X\'7b2261223a5b31302c32305d2c2262223a5b33302c34305d7d\'",
+            "X\'7b2262223a5b33302c34305d2c2261223a5b31302c32305d7d\'",
+        ]
+        #expect(try validLiterals.contains(value.asSQLLiteral()))
 
         await #expect(throws: RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)) {
             try await run(sqlType: "BLOB", writeValue: Optional<[String: CGPoint]>.none, readValue: [Int]())

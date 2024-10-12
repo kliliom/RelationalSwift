@@ -14,6 +14,13 @@ private enum AddressType: String {
     case other
 }
 
+private struct AddressPoint: Codable, Bindable, Equatable {
+    var x: Int
+    var y: Int
+
+    static let zero = AddressPoint(x: 0, y: 0)
+}
+
 private let userID1 = UUID()
 
 private let changeSetV1 = ChangeSet(id: "add addresses") {
@@ -26,16 +33,17 @@ private let changeSetV1 = ChangeSet(id: "add addresses") {
         Column("city", ofType: String.self)
         Column("state", ofType: String.self)
         Column("zip", ofType: String.self, storage: .varchar(length: 15))
-        Column("country", ofType: String.self)
+        Column("country", ofType: String.self, defaultValue: "US")
         Column("type", ofType: AddressType.self)
+        Column("point", ofType: AddressPoint.self, defaultValue: .zero)
     }
 
     Execute { db in
         try db.exec("""
-        INSERT INTO addresses (address_line_1, city, state, zip, country, type) VALUES ('123 Main St', 'Springfield', 'IL', '62701', 'US', 'home')
+        INSERT INTO addresses (address_line_1, city, state, zip, type) VALUES ('123 Main St', 'Springfield', 'IL', '62701', 'home')
         """)
         try db.exec("""
-        INSERT INTO addresses (address_line_1, city, state, zip, country, type) VALUES ('456 Elm St', 'Springfield', 'IL', '62701', 'US', 'work')
+        INSERT INTO addresses (address_line_1, city, state, zip, type) VALUES ('456 Elm St', 'Springfield', 'IL', '62701', 'work')
         """)
     }
 }
@@ -102,7 +110,8 @@ func migrateScenario1() async throws {
             let zip = try String.column(of: stmt, at: &index)
             let country = try String.column(of: stmt, at: &index)
             let type = try AddressType(rawValue: String.column(of: stmt, at: &index))
-            return (id, addressLine1, addressLine2, city, state, zip, country, type)
+            let point = try AddressPoint.column(of: stmt, at: &index)
+            return (id, addressLine1, addressLine2, city, state, zip, country, type, point)
         }
     )
 
@@ -116,4 +125,5 @@ func migrateScenario1() async throws {
     #expect(addressOfUser1.5 == "62701")
     #expect(addressOfUser1.6 == "US")
     #expect(addressOfUser1.7 == .home)
+    #expect(addressOfUser1.8 == .zero)
 }

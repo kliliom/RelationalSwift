@@ -3,6 +3,8 @@
 //  Created by Kristof Liliom in 2024.
 //
 
+import Foundation
+
 extension String {
     /// Returns the string wrapped in quotes.
     var quoted: String {
@@ -37,14 +39,24 @@ extension [String] {
 }
 
 /// A type-erased value.
-protocol OptionalProtocol {
+protocol OptionalProtocol<WrappedType> {
+    associatedtype WrappedType
+
     /// The wrapped type.
-    static var wrappedType: Any.Type { get }
+    static var wrappedType: WrappedType.Type { get }
+
+    var anyWrappedValue: WrappedType? { get }
 }
 
 extension Optional: OptionalProtocol {
-    static var wrappedType: any Any.Type {
+    typealias WrappedType = Wrapped
+
+    static var wrappedType: Wrapped.Type {
         Wrapped.self
+    }
+
+    var anyWrappedValue: Wrapped? {
+        self
     }
 }
 
@@ -52,5 +64,17 @@ extension RawRepresentable {
     /// The raw value type.
     static var rawValueType: any Any.Type {
         RawValue.self
+    }
+}
+
+extension Data {
+    func hexEncodedString() -> String {
+        map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+extension UUID {
+    func hexEncodedString() -> String {
+        uuidString.replacingOccurrences(of: "-", with: "").lowercased()
     }
 }
