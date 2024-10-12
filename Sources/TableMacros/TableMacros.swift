@@ -49,27 +49,17 @@ public struct TableMacro: MemberMacro, ExtensionMacro {
     public static func expansion(
         of node: AttributeSyntax,
         attachedTo declaration: some DeclGroupSyntax,
-        providingExtensionsOf type: some TypeSyntaxProtocol,
+        providingExtensionsOf _: some TypeSyntaxProtocol,
         conformingTo _: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
         do {
             let table = try TableDecl.read(from: declaration)
-            let declarations = ExtensionGenerator(table: table).delcarations()
-            let ext = ExtensionDeclSyntax(
-                extendedType: TypeSyntax(stringLiteral: table.codeName),
-                inheritanceClause: InheritanceClauseSyntax(
-                    inheritedTypes: InheritedTypeListSyntax(
-                        arrayLiteral: InheritedTypeSyntax(type: TypeSyntax(stringLiteral: "RelationalSwift.Table"))
-                    )
-                ),
-                memberBlock: MemberBlockSyntax(
-                    members: MemberBlockItemListSyntax(
-                        declarations.map { MemberBlockItemSyntax(decl: $0) }
-                    )
-                )
-            )
-            return [ext]
+            return [
+                TableExtension.syntax(for: table),
+                InsertableExtension.syntax(for: table),
+                PrimaryKeyMutableExtension.syntax(for: table),
+            ].compactMap(\.self)
         } catch {
             if let error = error as? ExpansionError {
                 context.addDiagnostics(from: MacroError(message: error.message),

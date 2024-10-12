@@ -1,5 +1,5 @@
 //
-//  DefaultsTests.swift
+//  ReadOnlyTableTests.swift
 //  Created by Kristof Liliom in 2024.
 //
 
@@ -18,24 +18,36 @@ import XCTest
     ]
 #endif
 
-final class DefaultsTests: XCTestCase {
-    func testMacroWithDefaultParameters() throws {
+final class ReadOnlyTableTests: XCTestCase {
+    func testMacroWithReadOnlyTableParameters() throws {
         #if canImport(TableMacros)
             assertMacroExpansion(
                 """
-                @Table struct Contact {
-                    @Column var id: Int32
-                    @Column var name: String?
+                @Table("papaya", readOnly: true) struct Contact {
+                    @Column("apple", primaryKey: true) var id: Int32
+                    @Column("pickle", insert: false) var name: String?
+                    @Column("banana") var age: Int
+                    @Column("peach") var gender: String
+                    @Column("created_at", update: false) var createdAt: Date
+                    @Column("updated_at") var updatedAt: Date
                 }
                 """,
                 expandedSource: """
                 struct Contact {
                     var id: Int32
                     var name: String?
+                    var age: Int
+                    var gender: String
+                    var createdAt: Date
+                    var updatedAt: Date
 
-                    init(id: Int32 , name: String? ) {
+                    init(id: Int32 , name: String? , age: Int , gender: String , createdAt: Date , updatedAt: Date ) {
                         self.id = id
                         self.name = name
+                        self.age = age
+                        self.gender = gender
+                        self.createdAt = createdAt
+                        self.updatedAt = updatedAt
                     }
 
                     static var table: _TableRef {
@@ -48,15 +60,23 @@ final class DefaultsTests: XCTestCase {
 
                     struct _TableRef: TableRef {
                         typealias TableType = Contact
-                        let _name = "Contact"
+                        let _name = "papaya"
                         let _alias: String?
                         let id: TypedColumnRef<Int32>
                         let name: TypedColumnRef<String?>
+                        let age: TypedColumnRef<Int>
+                        let gender: TypedColumnRef<String>
+                        let createdAt: TypedColumnRef<Date>
+                        let updatedAt: TypedColumnRef<Date>
                         init(as alias: String? = nil) {
                             self._alias = alias
                             let _source = alias ?? _name
-                            id = TypedColumnRef(named: "id", of: _source)
-                            name = TypedColumnRef(named: "name", of: _source)
+                            id = TypedColumnRef(named: "apple", of: _source)
+                            name = TypedColumnRef(named: "pickle", of: _source)
+                            age = TypedColumnRef(named: "banana", of: _source)
+                            gender = TypedColumnRef(named: "peach", of: _source)
+                            createdAt = TypedColumnRef(named: "created_at", of: _source)
+                            updatedAt = TypedColumnRef(named: "updated_at", of: _source)
                         }
                         var _sqlFrom: String {
                             if let _alias {
@@ -73,7 +93,7 @@ final class DefaultsTests: XCTestCase {
                             }
                         }
                         var _readColumnSqlRefs: [String] {
-                            [id._sqlRef, name._sqlRef]
+                            [id._sqlRef, name._sqlRef, age._sqlRef, gender._sqlRef, createdAt._sqlRef, updatedAt._sqlRef]
                         }
                     }
                 }
@@ -82,47 +102,13 @@ final class DefaultsTests: XCTestCase {
                     static func read(from stmt: borrowing StatementHandle, startingAt index: inout ManagedIndex) throws -> Contact {
                         Contact(
                             id: try Int32.column(of: stmt, at: &index),
-                            name: try String?.column(of: stmt, at: &index)
+                            name: try String?.column(of: stmt, at: &index),
+                            age: try Int.column(of: stmt, at: &index),
+                            gender: try String.column(of: stmt, at: &index),
+                            createdAt: try Date.column(of: stmt, at: &index),
+                            updatedAt: try Date.column(of: stmt, at: &index)
                         )
                     }
-                }
-
-                extension Contact: RelationalSwift.Insertable {
-                    static let readByRowIDAction: (String, @Sendable (Int64) -> Binder) =
-                        (
-                            \"""
-                            SELECT "id", "name"
-                            FROM "Contact"
-                            WHERE rowid = ?
-                            \""",
-                            { rowID in
-                                { stmt, index in
-                                    // WHERE
-                                    try Int64.bind(to: stmt, value: rowID, at: &index)
-                                }
-                            }
-                        )
-                    static let insertAction: (String, @Sendable (Contact) -> Binder) =
-                        (
-                            \"""
-                            INSERT INTO "Contact" ("id", "name")
-                            VALUES (?, ?)
-                            \""",
-                            { row in
-                                { stmt, index in
-                                    // VALUES
-                                    try Int32.bind(to: stmt, value: row.id, at: &index)
-                                    try String?.bind(to: stmt, value: row.name, at: &index)
-                                }
-                            }
-                        )
-                    static let createTableAction: String =
-                        \"""
-                        CREATE TABLE "Contact" (
-                            "id" INTEGER NOT NULL,
-                            "name" TEXT
-                        )
-                        \"""
                 }
                 """,
                 macros: testMacros

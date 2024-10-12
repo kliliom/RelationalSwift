@@ -10,11 +10,15 @@
 )
 @attached(
     extension,
-    names: named(read(from:startingAt:)), named(read(rowID:)), named(insert(entry:)), named(update(entry:)), named(delete(entry:)), named(createTable()),
-    conformances: Table
+    conformances: Table, PrimaryKeyMutable, Insertable,
+    names:
+    named(read(from:startingAt:)),
+    named(insertAction), named(readByRowIDAction), named(createTableAction),
+    named(KeyType), named(updateAction), named(deleteAction)
 )
 public macro Table(
-    _ name: String? = nil
+    _ name: String? = nil,
+    readOnly: Bool = false
 ) = #externalMacro(module: "TableMacros", type: "TableMacro")
 
 @attached(peer)

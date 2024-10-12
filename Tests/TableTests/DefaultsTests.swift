@@ -58,18 +58,4 @@ struct DefaultsTests {
         #expect(rows.count == 1)
         #expect(rows[0] == entry)
     }
-
-    @Test("Unsupported update")
-    func update() async throws {
-        await #expect(throws: DB4SwiftError(message: "table TestEntry does not have primary keys, update not supported")) {
-            try await db.update(entry)
-        }
-    }
-
-    @Test("Unsupported delete")
-    func delete() async throws {
-        await #expect(throws: DB4SwiftError(message: "table TestEntry does not have primary keys, delete not supported")) {
-            try await db.delete(entry)
-        }
-    }
 }

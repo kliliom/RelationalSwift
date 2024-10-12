@@ -109,63 +109,42 @@ final class NonDefaultsTests: XCTestCase {
                             updatedAt: try Date.column(of: stmt, at: &index)
                         )
                     }
-                    static func read(rowID: Int64) throws -> (String, Binder) {
+                }
+
+                extension Contact: RelationalSwift.Insertable {
+                    static let readByRowIDAction: (String, @Sendable (Int64) -> Binder) =
                         (
-                            \"\"\"
+                            \"""
                             SELECT "apple", "pickle", "banana", "peach", "created_at", "updated_at"
                             FROM "papaya"
                             WHERE rowid = ?
-                            \"\"\",
-                            { stmt, index in
-                                try Int64.bind(to: stmt, value: rowID, at: &index)
+                            \""",
+                            { rowID in
+                                { stmt, index in
+                                    // WHERE
+                                    try Int64.bind(to: stmt, value: rowID, at: &index)
+                                }
                             }
                         )
-                    }
-                    static func insert(entry: Contact) throws -> (String, Binder) {
+                    static let insertAction: (String, @Sendable (Contact) -> Binder) =
                         (
-                            \"\"\"
-                            INSERT INTO "papaya" ("banana", "peach", "created_at", "updated_at")
-                            VALUES (?, ?, ?, ?)
-                            \"\"\",
-                            { stmt, index in
-                                try Int.bind(to: stmt, value: entry.age, at: &index)
-                                try String.bind(to: stmt, value: entry.gender, at: &index)
-                                try Date.bind(to: stmt, value: entry.createdAt, at: &index)
-                                try Date.bind(to: stmt, value: entry.updatedAt, at: &index)
+                            \"""
+                            INSERT INTO "papaya" ("apple", "banana", "peach", "created_at", "updated_at")
+                            VALUES (?, ?, ?, ?, ?)
+                            \""",
+                            { row in
+                                { stmt, index in
+                                    // VALUES
+                                    try Int32.bind(to: stmt, value: row.id, at: &index)
+                                    try Int.bind(to: stmt, value: row.age, at: &index)
+                                    try String.bind(to: stmt, value: row.gender, at: &index)
+                                    try Date.bind(to: stmt, value: row.createdAt, at: &index)
+                                    try Date.bind(to: stmt, value: row.updatedAt, at: &index)
+                                }
                             }
                         )
-                    }
-                    static func update(entry: Contact) throws -> (String, Binder) {
-                        (
-                            \"\"\"
-                            UPDATE "papaya" SET "pickle" = ?, "banana" = ?, "peach" = ?, "updated_at" = ?
-                            WHERE "apple" == ?
-                            \"\"\",
-                            { stmt, index in
-                                // Set
-                                try String?.bind(to: stmt, value: entry.name, at: &index)
-                                try Int.bind(to: stmt, value: entry.age, at: &index)
-                                try String.bind(to: stmt, value: entry.gender, at: &index)
-                                try Date.bind(to: stmt, value: entry.updatedAt, at: &index)
-
-                                // Where
-                                try Int32.bind(to: stmt, value: entry.id, at: &index)
-                            }
-                        )
-                    }
-                    static func delete(entry: Contact) throws -> (String, Binder) {
-                        (
-                            \"\"\"
-                            DELETE FROM "papaya"
-                            WHERE "apple" == ?
-                            \"\"\",
-                            { stmt, index in
-                                try Int32.bind(to: stmt, value: entry.id, at: &index)
-                            }
-                        )
-                    }
-                    static func createTable() throws -> String {
-                        \"\"\"
+                    static let createTableAction: String =
+                        \"""
                         CREATE TABLE "papaya" (
                             "apple" INTEGER NOT NULL,
                             "pickle" TEXT,
@@ -175,8 +154,43 @@ final class NonDefaultsTests: XCTestCase {
                             "updated_at" DOUBLE NOT NULL,
                             PRIMARY KEY ("apple")
                         )
-                        \"\"\"
-                    }
+                        \"""
+                }
+
+                extension Contact: RelationalSwift.PrimaryKeyMutable {
+                    typealias KeyType = (Int32)
+                    static let updateAction: (String, @Sendable (Contact) -> Binder) =
+                        (
+                            \"""
+                            UPDATE "papaya" SET "pickle" = ?, "banana" = ?, "peach" = ?, "updated_at" = ?
+                            WHERE "apple" == ?
+                            \""",
+                            { row in
+                                { stmt, index in
+                                    // SET
+                                    try String?.bind(to: stmt, value: row.name, at: &index)
+                                    try Int.bind(to: stmt, value: row.age, at: &index)
+                                    try String.bind(to: stmt, value: row.gender, at: &index)
+                                    try Date.bind(to: stmt, value: row.updatedAt, at: &index)
+
+                                    // WHERE
+                                    try Int32.bind(to: stmt, value: row.id, at: &index)
+                                }
+                            }
+                        )
+                    static let deleteAction: (String, @Sendable (Contact) -> Binder) =
+                        (
+                            \"""
+                            DELETE FROM "papaya"
+                            WHERE "apple" == ?
+                            \""",
+                            { row in
+                                { stmt, index in
+                                    // WHERE
+                                    try Int32.bind(to: stmt, value: row.id, at: &index)
+                                }
+                            }
+                        )
                 }
                 """,
                 macros: testMacros
