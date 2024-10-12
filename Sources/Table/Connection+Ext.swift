@@ -64,7 +64,7 @@ extension Database {
     /// Queries a statement.
     /// - Parameters:
     ///   - statement: Statement to execute.
-    ///   - _: Columns to extract.
+    ///   - columns: Columns to extract.
     /// - Returns: Result of the query.
     public func query<each Column: ColumnRef>(
         _ statement: String,
@@ -80,7 +80,7 @@ extension Database {
     /// - Parameters:
     ///   - statement: Statement to execute.
     ///   - binder: Value binder.
-    ///   - _: Columns to extract.
+    ///   - columns: Columns to extract.
     /// - Returns: Result of the query.
     public func query<each Column: ColumnRef>(
         _ statement: String,
@@ -100,7 +100,7 @@ extension Database {
     /// - Parameters:
     ///   - statement: Statement to execute.
     ///   - bind: Values to bind.
-    ///   - _: Columns to extract.
+    ///   - columns: Columns to extract.
     /// - Returns: Result of the query.
     public func query<each Bind: Bindable, each Column: ColumnRef>(
         _ statement: String,
@@ -119,7 +119,7 @@ extension Database {
     /// Queries a statement.
     /// - Parameters:
     ///   - statement: Statement to execute.
-    ///   - _: Columns to extract.
+    ///   - columns: Columns to extract.
     ///   - builder: Result builder.
     /// - Returns: Result of the query.
     public func query<T, each Column: ColumnRef>(
@@ -137,7 +137,7 @@ extension Database {
     /// - Parameters:
     ///   - statement: Statement to execute.
     ///   - binder: Value binder.
-    ///   - _: Columns to extract.
+    ///   - columns: Columns to extract.
     ///   - builder: Result builder.
     /// - Returns: Result of the query.
     public func query<T, each Column: ColumnRef>(
@@ -159,7 +159,7 @@ extension Database {
     /// - Parameters:
     ///   - statement: Statement to execute.
     ///   - bind: Values to bind.
-    ///   - _: Columns to extract.
+    ///   - columns: Columns to extract.
     ///   - builder: Result builder.
     /// - Returns: Result of the query.
     public func query<T, each Bind: Bindable, each Column: ColumnRef>(
