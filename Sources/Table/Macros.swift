@@ -14,7 +14,7 @@
     names:
     named(read(from:startingAt:)),
     named(insertAction), named(readByRowIDAction), named(createTableAction),
-    named(KeyType), named(updateAction), named(deleteAction)
+    named(KeyType), named(updateAction), named(partialUpdateAction(_:columns:)), named(deleteAction)
 )
 public macro Table(
     _ name: String? = nil,

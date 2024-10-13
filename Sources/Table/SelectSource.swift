@@ -110,6 +110,31 @@ public struct SelectSource<T: TableRef> {
         try await select(limit: 1).first
     }
 
+    /// Executes an update statement.
+    /// - Parameters:
+    ///   - columns: Columns to update.
+    ///   - values: New values for the columns.
+    public func update<each Column: ColumnRef>(
+        columns: repeat KeyPath<T, each Column>,
+        values: repeat (each Column).ValueType
+    ) async throws {
+        var setters = [ColumnValueSetter]()
+        repeat setters.append(
+            ColumnValueSetter(
+                columnName: tableRef[keyPath: each columns]._sqlName,
+                valueBinder: (each values).asBinder
+            )
+        )
+
+        let stmt = UpdateBuilder(
+            from: tableRef._sqlFrom,
+            setters: setters,
+            condition: condition
+        )
+        let database = database
+        return try await database.exec(stmt.statement(), binder: stmt.binder)
+    }
+
     /// Executes a delete statement.
     public func delete() async throws {
         let stmt = DeleteBuilder(

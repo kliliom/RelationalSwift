@@ -62,6 +62,60 @@ struct PrimaryKeyMutableExtension {
         """)
     }
 
+    private var partialUpdateFuncDecl: DeclSyntax {
+        let pks = table.columns.filter(\.attribute.primaryKey)
+        precondition(!pks.isEmpty)
+
+        let columns = table.columns.filter { $0.attribute.update ?? !$0.attribute.primaryKey }
+        let columnCases = columns
+            .map {
+                """
+                } else if column == \\.\($0.codeName) {
+                    sets.append("\($0.sqlName.quoted.replacingOccurrences(of: "\"", with: "\\\"")) = ?")
+                    setBinds.append(row.\($0.codeName).asBinder)
+                """
+            }
+            .joined(separator: "\n")
+        let wheres = pks
+            .map { "\($0.sqlName.quoted) == ?" }
+            .joined(separator: " AND ")
+        let whereBinds = pks
+            .map { "try \($0.codeType).bind(to: stmt, value: row.\($0.codeName), at: &index)" }
+            .joined(separator: "\n")
+
+        return DeclSyntax(stringLiteral: """
+        static func updateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Binder) {
+            var sets = [String]()
+            var setBinds = [Binder]()
+
+            for column in columns {
+                if false {
+                    /* do nothing */
+                \(columnCases)
+                } else {
+                    throw DB4SwiftError(message: "\\(column) is not a column")
+                }
+            }
+
+            return (
+                \"\"\"
+                UPDATE \(table.sqlName.quoted) SET \\(sets.joined(separator: ", "))
+                WHERE \(wheres)
+                \"\"\",
+                { [setBinds] stmt, index in
+                    // SET
+                    for bind in setBinds {
+                        try bind(stmt, &index)
+                    }
+
+                    // WHERE
+                    \(whereBinds)
+                }
+            )
+        }
+        """)
+    }
+
     private var deleteFuncDecl: DeclSyntax {
         let pks = table.columns.filter(\.attribute.primaryKey)
         precondition(!pks.isEmpty)
@@ -94,6 +148,7 @@ struct PrimaryKeyMutableExtension {
         [
             typealiasDecl,
             updateFuncDecl,
+            partialUpdateFuncDecl,
             deleteFuncDecl,
         ]
     }

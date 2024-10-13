@@ -77,6 +77,36 @@ struct SelectSourceTests {
         #expect(row == nil)
     }
 
+    @Test("Update")
+    func update() async throws {
+        var rows: [TestEntry]
+        rows = try await db.from(TestEntry.table).where { $0.a == 1 }.select()
+        #expect(rows.count == 1)
+        rows = try await db.from(TestEntry.table).where { $0.a == 2 }.select()
+        #expect(rows.count == 2)
+        rows = try await db.from(TestEntry.table).where { $0.a == 3 }.select()
+        #expect(rows.count == 3)
+
+        try await db.from(TestEntry.table)
+            .where { $0.a == 2 }
+            .update(columns: \.a, values: 1)
+
+        rows = try await db.from(TestEntry.table).where { $0.a == 1 }.select()
+        #expect(rows.count == 3)
+        rows = try await db.from(TestEntry.table).where { $0.a == 2 }.select()
+        #expect(rows.count == 0)
+        rows = try await db.from(TestEntry.table).where { $0.a == 3 }.select()
+        #expect(rows.count == 3)
+
+        try await db.from(TestEntry.table)
+            .update(columns: \.a, \.b, values: 1, 1)
+
+        rows = try await db.from(TestEntry.table).where { $0.a == 1 }.select()
+        #expect(rows.count == 6)
+        rows = try await db.from(TestEntry.table).where { $0.b == 1 }.select()
+        #expect(rows.count == 6)
+    }
+
     @Test("Delete")
     func delete() async throws {
         var rows: [TestEntry]

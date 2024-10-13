@@ -178,6 +178,46 @@ final class NonDefaultsTests: XCTestCase {
                                 }
                             }
                         )
+                    static func updateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Binder) {
+                        var sets = [String]()
+                        var setBinds = [Binder]()
+
+                        for column in columns {
+                            if false {
+                                /* do nothing */
+                            } else if column == \\.name {
+                        sets.append("\\"pickle\\" = ?")
+                        setBinds.append(row.name.asBinder)
+                            } else if column == \\.age {
+                        sets.append("\\"banana\\" = ?")
+                        setBinds.append(row.age.asBinder)
+                            } else if column == \\.gender {
+                        sets.append("\\"peach\\" = ?")
+                        setBinds.append(row.gender.asBinder)
+                            } else if column == \\.updatedAt {
+                        sets.append("\\"updated_at\\" = ?")
+                        setBinds.append(row.updatedAt.asBinder)
+                            } else {
+                                throw DB4SwiftError(message: "\\(column) is not a column")
+                            }
+                        }
+
+                        return (
+                            \"""
+                            UPDATE "papaya" SET \\(sets.joined(separator: ", "))
+                            WHERE "apple" == ?
+                            \""",
+                            { [setBinds] stmt, index in
+                                // SET
+                                for bind in setBinds {
+                                    try bind(stmt, &index)
+                                }
+
+                                // WHERE
+                                try Int32.bind(to: stmt, value: row.id, at: &index)
+                            }
+                        )
+                    }
                     static let deleteAction: (String, @Sendable (Contact) -> Binder) =
                         (
                             \"""

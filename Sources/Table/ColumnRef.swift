@@ -14,6 +14,9 @@ public protocol ColumnRef<ValueType>: Sendable {
     /// SQL reference to the column.
     var _sqlRef: String { get }
 
+    /// SQL reference to the column.
+    var _sqlName: String { get }
+
     /// Binder that binds the values to the statement.
     var binder: Binder? { get }
 }
@@ -83,6 +86,11 @@ public struct IfNullColumnRef<Value: Bindable>: ColumnRef {
     /// SQL reference to the column.
     public var _sqlRef: String {
         "IFNULL(\"\(tableName)\".\"\(columnName)\", ?)"
+    }
+
+    /// SQL name of the column.
+    public var _sqlName: String {
+        "IFNULL(\"\(columnName)\", ?)"
     }
 
     /// Binder that binds the values to the statement.
