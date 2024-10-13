@@ -301,6 +301,28 @@ extension Bindable where Self: Codable {
     }
 }
 
+extension Bindable where Self: RawRepresentable, RawValue: Bindable {
+    public static func bind(to stmt: borrowing StatementHandle, value: Self, at index: Int32) throws {
+        try RawValue.bind(to: stmt, value: value.rawValue, at: index)
+    }
+
+    public static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self {
+        let rawValue = try RawValue.column(of: stmt, at: index)
+        if let value = Self(rawValue: rawValue) {
+            return value
+        } else {
+            throw RelationalSwiftError(
+                message: "failed to map value \"\(rawValue)\" to \(String(describing: Self.self))",
+                code: -1
+            )
+        }
+    }
+
+    public func asSQLLiteral() throws -> String {
+        try rawValue.asSQLLiteral()
+    }
+}
+
 extension Optional: Bindable where Wrapped: Bindable {
     public static func bind(to stmt: borrowing StatementHandle, value: Self, at index: Int32) throws {
         if let value {

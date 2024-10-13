@@ -279,8 +279,26 @@ struct BindableTests {
             try await run(sqlType: "BLOB", writeValue: Optional<[String: CGPoint]>.none, readValue: [Int]())
         }
     }
+
+    @Test("Type: RawRepresentable")
+    func typeSupportRawRepresentable() async throws {
+        let value: MyRawRepresentable = .first
+        try await run(sqlType: "TEXT", value: value)
+        try await run(sqlType: "TEXT", value: Optional<MyRawRepresentable>.some(value))
+        try await run(sqlType: "TEXT", value: Optional<MyRawRepresentable>.none)
+        #expect(try value.asSQLLiteral() == "'first'")
+
+        await #expect(throws: RelationalSwiftError(message: "failed to map value \"other\" to MyRawRepresentable", code: -1)) {
+            try await run(sqlType: "TEXT", writeValue: "other", readValue: MyRawRepresentable.first)
+        }
+    }
     // swiftformat:enable typeSugar
 }
 
 extension CGPoint: Bindable, @unchecked @retroactive Sendable {}
 extension CGRect: Bindable, @unchecked @retroactive Sendable {}
+
+private enum MyRawRepresentable: String, Bindable {
+    case first
+    case second
+}
