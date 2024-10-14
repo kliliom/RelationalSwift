@@ -66,7 +66,7 @@ extension Database {
 
     /// Opens an in-memory database.
     /// - Returns: The opened database.
-    public static func openInMemory() async throws -> Database {
+    public static func openInMemory() throws -> Database {
         var ptr: OpaquePointer?
         try check(sqlite3_open(":memory:", &ptr), is: SQLITE_OK)
         return Database(db: DatabaseHandle(ptr: ptr!))
@@ -75,7 +75,7 @@ extension Database {
     /// Opens an on-disk database
     /// - Parameter url: URL of database to open.
     /// - Returns: The opened database.
-    public static func open(url: URL) async throws -> Database {
+    public static func open(url: URL) throws -> Database {
         guard url.isFileURL else {
             throw RelationalSwiftError(message: "can not open non-file url", code: -1)
         }

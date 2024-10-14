@@ -56,7 +56,7 @@ public class Migration {
     public func migrate(
         databaseAt databaseURL: URL,
         dryRun: Bool = false
-    ) async throws {
+    ) throws {
         if dryRun {
             let temporaryFileURL = if #available(iOS 16.0, tvOS 16.0, watchOS 9.0, macOS 13.0, *) {
                 URL(filePath: NSTemporaryDirectory()).appending(component: UUID().uuidString)
@@ -66,13 +66,13 @@ public class Migration {
             defer {
                 try? FileManager.default.removeItem(at: temporaryFileURL)
             }
-            try await migrate(
+            try migrate(
                 databaseAt: databaseURL,
                 usingTemporaryFileAt: temporaryFileURL,
                 dryRun: true
             )
         } else {
-            try await executeMigration(databaseAt: databaseURL)
+            try executeMigration(databaseAt: databaseURL)
         }
     }
 
@@ -94,7 +94,7 @@ public class Migration {
         databaseAt databaseURL: URL,
         usingTemporaryFileAt temporaryFileURL: URL,
         dryRun: Bool = false
-    ) async throws {
+    ) throws {
         let fileManager = FileManager.default
 
         let temporaryFilePath: String = if #available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *) {
@@ -117,7 +117,7 @@ public class Migration {
             try fileManager.copyItem(at: databaseURL, to: temporaryFileURL)
         }
 
-        try await executeMigration(databaseAt: temporaryFileURL)
+        try executeMigration(databaseAt: temporaryFileURL)
 
         if !dryRun {
             if fileManager.fileExists(atPath: databasePath) {
@@ -132,8 +132,8 @@ public class Migration {
     @DatabaseActor
     private func executeMigration(
         databaseAt databaseURL: URL
-    ) async throws {
-        let db = try await Database.open(url: databaseURL)
+    ) throws {
+        let db = try Database.open(url: databaseURL)
         try executeMigration(on: db)
     }
 }
