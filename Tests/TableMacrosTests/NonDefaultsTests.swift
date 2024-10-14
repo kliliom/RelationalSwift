@@ -146,12 +146,12 @@ final class NonDefaultsTests: XCTestCase {
                     static let createTableAction: String =
                         \"""
                         CREATE TABLE "papaya" (
-                            "apple" INTEGER NOT NULL,
-                            "pickle" TEXT,
-                            "banana" INTEGER NOT NULL,
-                            "peach" TEXT NOT NULL,
-                            "created_at" DOUBLE NOT NULL,
-                            "updated_at" DOUBLE NOT NULL,
+                            "apple" \\(Int32.detaultSQLStorageType) NOT NULL,
+                            "pickle" \\(String?.detaultSQLStorageType),
+                            "banana" \\(Int.detaultSQLStorageType) NOT NULL,
+                            "peach" \\(String.detaultSQLStorageType) NOT NULL,
+                            "created_at" \\(Date.detaultSQLStorageType) NOT NULL,
+                            "updated_at" \\(Date.detaultSQLStorageType) NOT NULL,
                             PRIMARY KEY ("apple")
                         )
                         \"""

@@ -119,8 +119,8 @@ final class DefaultsTests: XCTestCase {
                     static let createTableAction: String =
                         \"""
                         CREATE TABLE "Contact" (
-                            "id" INTEGER NOT NULL,
-                            "name" TEXT
+                            "id" \\(Int32.detaultSQLStorageType) NOT NULL,
+                            "name" \\(String?.detaultSQLStorageType)
                         )
                         \"""
                 }

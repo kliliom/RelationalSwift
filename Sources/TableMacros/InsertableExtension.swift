@@ -59,13 +59,12 @@ struct InsertableExtension {
     }
 
     private var createTableDecl: DeclSyntax {
-        let mapper = TypeMapper()
         var columns = table.columns.map { column in
             var constraints = ""
             if !column.codeType.isOptional {
                 constraints += " NOT NULL"
             }
-            return "\(column.sqlName.quoted) \(mapper.sqlType(for: column))\(constraints)"
+            return "\(column.sqlName.quoted) \\(\(column.codeType.description).detaultSQLStorageType)\(constraints)"
         }
 
         let pks = table.columns.filter(\.attribute.primaryKey)

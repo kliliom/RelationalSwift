@@ -33,6 +33,9 @@ public protocol Bindable: Sendable {
     /// Converts the value to an SQL literal.
     /// - Returns: The SQL literal representation of the value.
     func asSQLLiteral() throws -> String
+
+    /// The default SQL storage type for the value.
+    static var detaultSQLStorageType: String { get }
 }
 
 extension Bindable {
@@ -113,6 +116,8 @@ extension Int: Bindable {
     public func asSQLLiteral() throws -> String {
         "\(self)"
     }
+
+    public static var detaultSQLStorageType: String { "INTEGER" }
 }
 
 extension Int32: Bindable {
@@ -127,6 +132,8 @@ extension Int32: Bindable {
     public func asSQLLiteral() throws -> String {
         "\(self)"
     }
+
+    public static var detaultSQLStorageType: String { "INTEGER" }
 }
 
 extension Int64: Bindable {
@@ -141,6 +148,8 @@ extension Int64: Bindable {
     public func asSQLLiteral() throws -> String {
         "\(self)"
     }
+
+    public static var detaultSQLStorageType: String { "INTEGER" }
 }
 
 extension Bool: Bindable {
@@ -155,6 +164,8 @@ extension Bool: Bindable {
     public func asSQLLiteral() throws -> String {
         "\(self ? "TRUE" : "FALSE")"
     }
+
+    public static var detaultSQLStorageType: String { "BOOLEAN" }
 }
 
 extension Float: Bindable {
@@ -169,6 +180,8 @@ extension Float: Bindable {
     public func asSQLLiteral() throws -> String {
         "\(self)"
     }
+
+    public static var detaultSQLStorageType: String { "DOUBLE" }
 }
 
 extension Double: Bindable {
@@ -183,6 +196,8 @@ extension Double: Bindable {
     public func asSQLLiteral() throws -> String {
         "\(self)"
     }
+
+    public static var detaultSQLStorageType: String { "DOUBLE" }
 }
 
 extension String: Bindable {
@@ -213,6 +228,8 @@ extension String: Bindable {
         let escaped = replacingOccurrences(of: "'", with: "''")
         return "'\(escaped)'"
     }
+
+    public static var detaultSQLStorageType: String { "TEXT" }
 }
 
 extension UUID: Bindable {
@@ -235,6 +252,8 @@ extension UUID: Bindable {
         let bytes = withUnsafeBytes(of: uuid) { Data($0) }
         return try bytes.asSQLLiteral()
     }
+
+    public static var detaultSQLStorageType: String { "BLOB" }
 }
 
 extension Data: Bindable {
@@ -257,6 +276,8 @@ extension Data: Bindable {
         let hex = map { String(format: "%02x", $0) }.joined()
         return "X'\(hex)'"
     }
+
+    public static var detaultSQLStorageType: String { "BLOB" }
 }
 
 extension Date: Bindable {
@@ -271,6 +292,8 @@ extension Date: Bindable {
     public func asSQLLiteral() throws -> String {
         "\(timeIntervalSince1970)"
     }
+
+    public static var detaultSQLStorageType: String { "DOUBLE" }
 }
 
 extension Bindable where Self: Codable {
@@ -299,6 +322,8 @@ extension Bindable where Self: Codable {
         let hex = data.map { String(format: "%02x", $0) }.joined()
         return "X'\(hex)'"
     }
+
+    public static var detaultSQLStorageType: String { "BLOB" }
 }
 
 extension Bindable where Self: RawRepresentable, RawValue: Bindable {
@@ -321,6 +346,8 @@ extension Bindable where Self: RawRepresentable, RawValue: Bindable {
     public func asSQLLiteral() throws -> String {
         try rawValue.asSQLLiteral()
     }
+
+    public static var detaultSQLStorageType: String { RawValue.detaultSQLStorageType }
 }
 
 extension Optional: Bindable where Wrapped: Bindable {
@@ -348,6 +375,8 @@ extension Optional: Bindable where Wrapped: Bindable {
             try value.asSQLLiteral()
         }
     }
+
+    public static var detaultSQLStorageType: String { Wrapped.detaultSQLStorageType }
 }
 
 extension Array: Bindable where Self: Codable, Element: Bindable {}
