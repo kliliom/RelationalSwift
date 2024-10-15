@@ -107,6 +107,7 @@ struct ColumnTests {
         (Column("x", ofType: String.self), "\"x\" TEXT NOT NULL"),
         (Column("x", ofType: String?.self), "\"x\" TEXT"),
         (Column("x", ofType: String.self, storage: .varchar(length: 15)), "\"x\" VARCHAR(15) NOT NULL"),
+        (Column("x\"", ofType: String.self), "\"x\"\"\" TEXT NOT NULL"),
     ] as [(Column, String)])
     func appendToBuilder(argument: (Column, String)) {
         let builder = SQLBuilder()

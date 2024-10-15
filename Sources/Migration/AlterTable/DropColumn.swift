@@ -25,7 +25,7 @@ public struct DropColumn: AlterTableChange {
     public func append(to builder: SQLBuilder) {
         alterTable.append(to: builder)
         builder.sql.append("DROP COLUMN")
-        builder.sql.append(columnName.quoted)
+        builder.sql.append(columnName.asSQLIdentifier)
     }
 
     public func validate(in validation: Validation) {

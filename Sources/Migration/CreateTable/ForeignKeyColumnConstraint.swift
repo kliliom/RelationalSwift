@@ -55,12 +55,12 @@ public struct ForeignKeyColumnConstraint: ColumnConstraint {
     public func append(to builder: SQLBuilder) {
         if let constraintName {
             builder.sql.append("CONSTRAINT")
-            builder.sql.append(constraintName.quoted)
+            builder.sql.append(constraintName.asSQLIdentifier)
         }
         builder.sql.append("REFERENCES")
-        builder.sql.append(foreignTable.quoted)
+        builder.sql.append(foreignTable.asSQLIdentifier)
         if let foreignColumn {
-            [foreignColumn].append(to: builder, quoted: true, parentheses: true)
+            [foreignColumn].appendAsSQLIdentifierList(to: builder)
         }
         if let onUpdate {
             builder.sql.append("ON UPDATE")

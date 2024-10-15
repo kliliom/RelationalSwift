@@ -9,42 +9,16 @@ import Testing
 
 @Suite
 struct FoundationExtensionsTests {
-    @Test("Quoted string")
-    func quotedString() {
-        let string = "string"
-        let quoted = string.quoted
-
-        #expect(quoted == "\"string\"")
+    @Test("As SQL identifier")
+    func asSQLIdentifier() {
+        #expect("string".asSQLIdentifier == "\"string\"")
+        #expect("str\"ing".asSQLIdentifier == "\"str\"\"ing\"")
     }
 
-    @Test("Append to SQLBuilder")
-    func appendToSQLBuilder() {
+    @Test("Append to SQLBuilder as SQL identifier list")
+    func appendAsSQLIdentifierList() {
         let builder = SQLBuilder()
-        ["a", "b"].append(to: builder, quoted: false, parentheses: false)
-
-        #expect(builder.sql == ["a", ",", "b"])
-    }
-
-    @Test("Append to SQLBuilder with parentheses")
-    func appendToSQLBuilderWithParentheses() {
-        let builder = SQLBuilder()
-        ["a", "b"].append(to: builder, quoted: false, parentheses: true)
-
-        #expect(builder.sql == ["(", "a", ",", "b", ")"])
-    }
-
-    @Test("Append to SQLBuilder with quoted")
-    func appendToSQLBuilderWithQuoted() {
-        let builder = SQLBuilder()
-        ["a", "b"].append(to: builder, quoted: true, parentheses: false)
-
-        #expect(builder.sql == ["\"a\"", ",", "\"b\""])
-    }
-
-    @Test("Append to SQLBuilder with quoted and parentheses")
-    func appendToSQLBuilderWithQuotedAndParentheses() {
-        let builder = SQLBuilder()
-        ["a", "b"].append(to: builder, quoted: true, parentheses: true)
+        ["a", "b"].appendAsSQLIdentifierList(to: builder)
 
         #expect(builder.sql == ["(", "\"a\"", ",", "\"b\"", ")"])
     }

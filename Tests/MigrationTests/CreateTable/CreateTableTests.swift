@@ -268,4 +268,24 @@ struct CreateTableTests {
         #expect(columns[1] == "name")
         #expect(columns[2] == "email")
     }
+
+    @Test("Table with special identifiers")
+    func tableWithSpecialIdentifiers() async throws {
+        let table = CreateTable("test\"table") {
+            Column("i\"d", ofType: Int.self)
+                .primaryKey(constraintName: "con\"straint")
+        }
+
+        let db = try await Database.openInMemory()
+        try await table.apply(to: db)
+
+        let columns = try await db.query(
+            "PRAGMA table_info('test\"table')",
+            step: { stmt, _ in
+                try String.column(of: stmt, at: 1)
+            }
+        )
+        #expect(columns.count == 1)
+        #expect(columns[0] == "i\"d")
+    }
 }

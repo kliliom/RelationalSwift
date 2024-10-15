@@ -83,14 +83,14 @@ public struct ForeignKeyTableConstraint: TableConstraint {
     public func append(to builder: SQLBuilder) {
         if let constraintName {
             builder.sql.append("CONSTRAINT")
-            builder.sql.append(constraintName.quoted)
+            builder.sql.append(constraintName.asSQLIdentifier)
         }
         builder.sql.append("FOREIGN KEY")
-        tableColumns.append(to: builder, quoted: true, parentheses: true)
+        tableColumns.appendAsSQLIdentifierList(to: builder)
         builder.sql.append("REFERENCES")
-        builder.sql.append(foreignTable.quoted)
+        builder.sql.append(foreignTable.asSQLIdentifier)
         if !foreignColumns.isEmpty {
-            foreignColumns.append(to: builder, quoted: true, parentheses: true)
+            foreignColumns.appendAsSQLIdentifierList(to: builder)
         }
         if let onUpdate {
             builder.sql.append("ON UPDATE")

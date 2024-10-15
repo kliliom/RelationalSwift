@@ -37,10 +37,10 @@ public struct DropTable: Change, SQLConvertible {
             builder.sql.append("IF EXISTS")
         }
         if let schemaName {
-            builder.sql.append(schemaName.quoted)
+            builder.sql.append(schemaName.asSQLIdentifier)
             builder.sql.append(".")
         }
-        builder.sql.append(tableName.quoted)
+        builder.sql.append(tableName.asSQLIdentifier)
     }
 
     public func apply(to db: Database) throws {

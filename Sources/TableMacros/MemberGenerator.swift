@@ -45,7 +45,7 @@ struct MemberGenerator {
         """)
 
         members.append("""
-        let _name = "\(table.sqlName)"
+        let _identifier = \(table.sqlIdentifierLiteral)
         """)
 
         members.append("""
@@ -60,18 +60,18 @@ struct MemberGenerator {
 
         members.append("""
         init(as alias: String? = nil) {
-            self._alias = alias
-            let _source = alias ?? _name
-            \(table.columns.map { "\($0.codeName) = TypedColumnRef(named: \($0.sqlName.quoted), of: _source)" }.joined(separator: "\n"))
+            self._alias = alias.map { "\\"\\($0.replacingOccurrences(of: "\\"", with: "\\"\\""))\\"" }
+            let _source = _alias ?? _identifier
+            \(table.columns.map { "\($0.codeName) = TypedColumnRef(named: \($0.sqlIdentifierLiteral), of: _source)" }.joined(separator: "\n"))
         }
         """)
 
         members.append("""
         var _sqlFrom: String {
             if let _alias {
-                "\\"\\(_name)\\" AS \\(_alias)"
+                "\\(_identifier) AS \\(_alias)"
             } else {
-                "\\"\\(_name)\\""
+                _identifier
             }
         }
         """)
@@ -79,9 +79,9 @@ struct MemberGenerator {
         members.append("""
         var _sqlRef: String {
             if let _alias {
-                "\\"\\(_alias)\\""
+                _alias
             } else {
-                "\\"\\(_name)\\""
+                _identifier
             }
         }
         """)

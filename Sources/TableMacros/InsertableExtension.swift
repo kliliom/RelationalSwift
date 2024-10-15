@@ -13,7 +13,7 @@ struct InsertableExtension {
 
     private var readRowIDFuncDecl: DeclSyntax {
         let fields = table.columns
-            .map { "\($0.sqlName.quoted)" }
+            .map(\.sqlIdentifier)
             .joined(separator: ", ")
 
         return DeclSyntax(stringLiteral: """
@@ -21,7 +21,7 @@ struct InsertableExtension {
             (
                 \"\"\"
                 SELECT \(fields)
-                FROM \(table.sqlName.quoted)
+                FROM \(table.sqlIdentifier)
                 WHERE rowid = ?
                 \"\"\",
                 { rowID in
@@ -37,7 +37,7 @@ struct InsertableExtension {
     private var insertFuncDecl: DeclSyntax {
         let columns = table.columns.filter { $0.attribute.insert ?? true }
 
-        let colNames = columns.map(\.sqlName.quoted).joined(separator: ", ")
+        let colNames = columns.map(\.sqlIdentifier).joined(separator: ", ")
         let values = columns.map { _ in "?" }.joined(separator: ", ")
         let valueBinds = columns.map { "try \($0.codeType).bind(to: stmt, value: row.\($0.codeName), at: &index)" }.joined(separator: "\n")
 
@@ -45,7 +45,7 @@ struct InsertableExtension {
         static let insertAction: (String, @Sendable (\(table.codeName)) -> Binder) =
             (
                 \"\"\"
-                INSERT INTO \(table.sqlName.quoted) (\(colNames))
+                INSERT INTO \(table.sqlIdentifier) (\(colNames))
                 VALUES (\(values))
                 \"\"\",
                 { row in
@@ -64,19 +64,19 @@ struct InsertableExtension {
             if !column.codeType.isOptional {
                 constraints += " NOT NULL"
             }
-            return "\(column.sqlName.quoted) \\(\(column.codeType.description).detaultSQLStorageType)\(constraints)"
+            return "\(column.sqlIdentifier) \\(\(column.codeType.description).detaultSQLStorageType)\(constraints)"
         }
 
         let pks = table.columns.filter(\.attribute.primaryKey)
         if !pks.isEmpty {
-            let pk = "PRIMARY KEY (\(pks.map(\.sqlName.quoted).joined(separator: ", ")))"
+            let pk = "PRIMARY KEY (\(pks.map(\.sqlIdentifier).joined(separator: ", ")))"
             columns.append(pk)
         }
 
         return DeclSyntax(stringLiteral: """
         static let createTableAction: String =
             \"\"\"
-            CREATE TABLE \(table.sqlName.quoted) (
+            CREATE TABLE \(table.sqlIdentifier) (
                 \(columns.joined(separator: ",\n        "))
             )
             \"\"\"

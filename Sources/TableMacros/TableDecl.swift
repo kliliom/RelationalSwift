@@ -11,8 +11,12 @@ struct TableDecl {
     var attribute: TableAttribute
     var columns: [ColumnDecl] = []
 
-    var sqlName: String {
-        attribute.name ?? codeName
+    var sqlIdentifier: String {
+        (attribute.name ?? codeName).sqlIdentifier
+    }
+
+    var sqlIdentifierLiteral: String {
+        "\"\(sqlIdentifier.replacingOccurrences(of: "\"", with: "\\\""))\""
     }
 
     static func read(

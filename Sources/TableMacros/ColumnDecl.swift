@@ -11,15 +11,6 @@ struct ColumnDecl {
         case required(name: String)
         case optional(name: String)
 
-        var storedType: String {
-            switch self {
-            case let .required(name):
-                name
-            case let .optional(name):
-                name
-            }
-        }
-
         var description: String {
             switch self {
             case let .required(name):
@@ -43,8 +34,12 @@ struct ColumnDecl {
     var codeType: CodeType
     var attribute: ColumnAttribute
 
-    var sqlName: String {
-        attribute.name ?? codeName
+    var sqlIdentifier: String {
+        (attribute.name ?? codeName).sqlIdentifier
+    }
+
+    var sqlIdentifierLiteral: String {
+        "\"\(sqlIdentifier.replacingOccurrences(of: "\"", with: "\\\""))\""
     }
 
     static func read(

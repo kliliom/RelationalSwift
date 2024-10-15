@@ -23,10 +23,10 @@ public struct AlterTable: SQLConvertible, Sendable {
     public func append(to builder: SQLBuilder) {
         builder.sql.append("ALTER TABLE")
         if let schemaName {
-            builder.sql.append(schemaName.quoted)
+            builder.sql.append(schemaName.asSQLIdentifier)
             builder.sql.append(".")
         }
-        builder.sql.append(tableName.quoted)
+        builder.sql.append(tableName.asSQLIdentifier)
     }
 
     /// Validates the change base.

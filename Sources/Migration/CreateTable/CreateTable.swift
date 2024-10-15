@@ -115,10 +115,10 @@ public struct CreateTable: Change, SQLConvertible {
             builder.sql.append("IF NOT EXISTS")
         }
         if let schemaName {
-            builder.sql.append(schemaName.quoted)
+            builder.sql.append(schemaName.asSQLIdentifier)
             builder.sql.append(".")
         }
-        builder.sql.append(tableName.quoted)
+        builder.sql.append(tableName.asSQLIdentifier)
         builder.sql.append("(")
 
         var isFirstLine = true

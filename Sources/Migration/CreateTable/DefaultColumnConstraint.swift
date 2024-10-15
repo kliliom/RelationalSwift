@@ -35,7 +35,7 @@ public struct DefaultColumnConstraint: ColumnConstraint {
     public func append(to builder: SQLBuilder) {
         if let constraintName {
             builder.sql.append("CONSTRAINT")
-            builder.sql.append(constraintName.quoted)
+            builder.sql.append(constraintName.asSQLIdentifier)
         }
         builder.sql.append("DEFAULT")
         builder.sql.append(unsafeValue)

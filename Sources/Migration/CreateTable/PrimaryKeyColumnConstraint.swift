@@ -49,7 +49,7 @@ public struct PrimaryKeyColumnConstraint: ColumnConstraint {
     public func append(to builder: SQLBuilder) {
         if let constraintName {
             builder.sql.append("CONSTRAINT")
-            builder.sql.append(constraintName.quoted)
+            builder.sql.append(constraintName.asSQLIdentifier)
         }
         builder.sql.append("PRIMARY KEY")
         if let order {

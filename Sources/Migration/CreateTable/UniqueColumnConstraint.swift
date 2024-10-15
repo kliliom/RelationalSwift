@@ -33,7 +33,7 @@ public struct UniqueColumnConstraint: ColumnConstraint {
     public func append(to builder: SQLBuilder) {
         if let constraintName {
             builder.sql.append("CONSTRAINT")
-            builder.sql.append(constraintName.quoted)
+            builder.sql.append(constraintName.asSQLIdentifier)
         }
         builder.sql.append("UNIQUE")
         if let onConflict {

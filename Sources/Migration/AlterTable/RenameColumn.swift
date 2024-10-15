@@ -30,9 +30,9 @@ public struct RenameColumn: AlterTableChange {
     public func append(to builder: SQLBuilder) {
         alterTable.append(to: builder)
         builder.sql.append("RENAME COLUMN")
-        builder.sql.append(oldName.quoted)
+        builder.sql.append(oldName.asSQLIdentifier)
         builder.sql.append("TO")
-        builder.sql.append(newName.quoted)
+        builder.sql.append(newName.asSQLIdentifier)
     }
 
     public func validate(in validation: Validation) {

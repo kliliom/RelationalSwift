@@ -144,7 +144,7 @@ public struct Column: SQLConvertible, Sendable {
     }
 
     public func append(to builder: SQLBuilder) {
-        builder.sql.append(name.quoted)
+        builder.sql.append(name.asSQLIdentifier)
         storage.append(to: builder)
         for constraint in constraints {
             constraint.append(to: builder)

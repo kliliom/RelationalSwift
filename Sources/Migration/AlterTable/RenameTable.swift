@@ -25,7 +25,7 @@ public struct RenameTable: AlterTableChange {
     public func append(to builder: SQLBuilder) {
         alterTable.append(to: builder)
         builder.sql.append("RENAME TO")
-        builder.sql.append(newTableName.quoted)
+        builder.sql.append(newTableName.asSQLIdentifier)
     }
 
     public func validate(in validation: Validation) {

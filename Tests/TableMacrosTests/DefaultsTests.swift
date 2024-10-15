@@ -48,28 +48,30 @@ final class DefaultsTests: XCTestCase {
 
                     struct _TableRef: TableRef {
                         typealias TableType = Contact
-                        let _name = "Contact"
+                        let _identifier = "\\"Contact\\""
                         let _alias: String?
                         let id: TypedColumnRef<Int32>
                         let name: TypedColumnRef<String?>
                         init(as alias: String? = nil) {
-                            self._alias = alias
-                            let _source = alias ?? _name
-                            id = TypedColumnRef(named: "id", of: _source)
-                            name = TypedColumnRef(named: "name", of: _source)
+                            self._alias = alias.map {
+                                "\\"\\($0.replacingOccurrences(of: "\\"", with: "\\"\\""))\\""
+                            }
+                            let _source = _alias ?? _identifier
+                            id = TypedColumnRef(named: "\\"id\\"", of: _source)
+                            name = TypedColumnRef(named: "\\"name\\"", of: _source)
                         }
                         var _sqlFrom: String {
                             if let _alias {
-                                "\\"\\(_name)\\" AS \\(_alias)"
+                                "\\(_identifier) AS \\(_alias)"
                             } else {
-                                "\\"\\(_name)\\""
+                                _identifier
                             }
                         }
                         var _sqlRef: String {
                             if let _alias {
-                                "\\"\\(_alias)\\""
+                                _alias
                             } else {
-                                "\\"\\(_name)\\""
+                                _identifier
                             }
                         }
                         var _readColumnSqlRefs: [String] {

@@ -30,13 +30,13 @@ struct PrimaryKeyMutableExtension {
 
         let columns = table.columns.filter { $0.attribute.update ?? !$0.attribute.primaryKey }
         let sets = columns
-            .map { "\($0.sqlName.quoted) = ?" }
+            .map { "\($0.sqlIdentifier) = ?" }
             .joined(separator: ", ")
         let setBinds = columns
             .map { "try \($0.codeType).bind(to: stmt, value: row.\($0.codeName), at: &index)" }
             .joined(separator: "\n")
         let wheres = pks
-            .map { "\($0.sqlName.quoted) == ?" }
+            .map { "\($0.sqlIdentifier) == ?" }
             .joined(separator: " AND ")
         let whereBinds = pks
             .map { "try \($0.codeType).bind(to: stmt, value: row.\($0.codeName), at: &index)" }
@@ -46,7 +46,7 @@ struct PrimaryKeyMutableExtension {
         static let updateAction: (String, @Sendable (\(table.codeName)) -> Binder) =
             (
                 \"\"\"
-                UPDATE \(table.sqlName.quoted) SET \(sets)
+                UPDATE \(table.sqlIdentifier) SET \(sets)
                 WHERE \(wheres)
                 \"\"\",
                 { row in
@@ -71,13 +71,13 @@ struct PrimaryKeyMutableExtension {
             .map {
                 """
                 } else if column == \\.\($0.codeName) {
-                    sets.append("\($0.sqlName.quoted.replacingOccurrences(of: "\"", with: "\\\"")) = ?")
+                    sets.append("\($0.sqlIdentifier.replacingOccurrences(of: "\"", with: "\\\"")) = ?")
                     setBinds.append(row.\($0.codeName).asBinder)
                 """
             }
             .joined(separator: "\n")
         let wheres = pks
-            .map { "\($0.sqlName.quoted) == ?" }
+            .map { "\($0.sqlIdentifier) == ?" }
             .joined(separator: " AND ")
         let whereBinds = pks
             .map { "try \($0.codeType).bind(to: stmt, value: row.\($0.codeName), at: &index)" }
@@ -99,7 +99,7 @@ struct PrimaryKeyMutableExtension {
 
             return (
                 \"\"\"
-                UPDATE \(table.sqlName.quoted) SET \\(sets.joined(separator: ", "))
+                UPDATE \(table.sqlIdentifier) SET \\(sets.joined(separator: ", "))
                 WHERE \(wheres)
                 \"\"\",
                 { [setBinds] stmt, index in
@@ -121,7 +121,7 @@ struct PrimaryKeyMutableExtension {
         precondition(!pks.isEmpty)
 
         let wheres = pks
-            .map { "\($0.sqlName.quoted) == ?" }
+            .map { "\($0.sqlIdentifier) == ?" }
             .joined(separator: " AND ")
         let whereBinds = pks
             .map { "try \($0.codeType).bind(to: stmt, value: row.\($0.codeName), at: &index)" }
@@ -131,7 +131,7 @@ struct PrimaryKeyMutableExtension {
         static let deleteAction: (String, @Sendable (\(table.codeName)) -> Binder) =
             (
                 \"\"\"
-                DELETE FROM \(table.sqlName.quoted)
+                DELETE FROM \(table.sqlIdentifier)
                 WHERE \(wheres)
                 \"\"\",
                 { row in

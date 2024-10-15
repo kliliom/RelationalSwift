@@ -60,7 +60,7 @@ final class NonDefaultsTests: XCTestCase {
 
                     struct _TableRef: TableRef {
                         typealias TableType = Contact
-                        let _name = "papaya"
+                        let _identifier = "\\"papaya\\""
                         let _alias: String?
                         let id: TypedColumnRef<Int32>
                         let name: TypedColumnRef<String?>
@@ -69,27 +69,29 @@ final class NonDefaultsTests: XCTestCase {
                         let createdAt: TypedColumnRef<Date>
                         let updatedAt: TypedColumnRef<Date>
                         init(as alias: String? = nil) {
-                            self._alias = alias
-                            let _source = alias ?? _name
-                            id = TypedColumnRef(named: "apple", of: _source)
-                            name = TypedColumnRef(named: "pickle", of: _source)
-                            age = TypedColumnRef(named: "banana", of: _source)
-                            gender = TypedColumnRef(named: "peach", of: _source)
-                            createdAt = TypedColumnRef(named: "created_at", of: _source)
-                            updatedAt = TypedColumnRef(named: "updated_at", of: _source)
+                            self._alias = alias.map {
+                                "\\"\\($0.replacingOccurrences(of: "\\"", with: "\\"\\""))\\""
+                            }
+                            let _source = _alias ?? _identifier
+                            id = TypedColumnRef(named: "\\"apple\\"", of: _source)
+                            name = TypedColumnRef(named: "\\"pickle\\"", of: _source)
+                            age = TypedColumnRef(named: "\\"banana\\"", of: _source)
+                            gender = TypedColumnRef(named: "\\"peach\\"", of: _source)
+                            createdAt = TypedColumnRef(named: "\\"created_at\\"", of: _source)
+                            updatedAt = TypedColumnRef(named: "\\"updated_at\\"", of: _source)
                         }
                         var _sqlFrom: String {
                             if let _alias {
-                                "\\"\\(_name)\\" AS \\(_alias)"
+                                "\\(_identifier) AS \\(_alias)"
                             } else {
-                                "\\"\\(_name)\\""
+                                _identifier
                             }
                         }
                         var _sqlRef: String {
                             if let _alias {
-                                "\\"\\(_alias)\\""
+                                _alias
                             } else {
-                                "\\"\\(_name)\\""
+                                _identifier
                             }
                         }
                         var _readColumnSqlRefs: [String] {

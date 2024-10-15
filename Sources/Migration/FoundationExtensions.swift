@@ -6,35 +6,24 @@
 import Foundation
 
 extension String {
-    /// Returns the string wrapped in quotes.
-    var quoted: String {
-        "\"\(self)\""
+    /// Returns the string escaped and wrapped in quotes.
+    var asSQLIdentifier: String {
+        "\"\(replacingOccurrences(of: "\"", with: "\"\""))\""
     }
 }
 
 extension [String] {
     /// Appends the elements to the builder.
-    /// - Parameters:
-    ///   - builder: SQL builder to append to.
-    ///   - quoted: Whether to quote the elements.
-    ///   - parentheses: Whether to wrap the elements in parentheses.
-    func append(to builder: SQLBuilder, quoted: Bool, parentheses: Bool) {
-        if parentheses {
-            builder.sql.append("(")
-        }
+    /// - Parameter builder: SQL builder to append to.
+    func appendAsSQLIdentifierList(to builder: SQLBuilder) {
+        builder.sql.append("(")
         for (index, column) in enumerated() {
             if index > 0 {
                 builder.sql.append(",")
             }
-            if quoted {
-                builder.sql.append(column.quoted)
-            } else {
-                builder.sql.append(column)
-            }
+            builder.sql.append(column.asSQLIdentifier)
         }
-        if parentheses {
-            builder.sql.append(")")
-        }
+        builder.sql.append(")")
     }
 }
 

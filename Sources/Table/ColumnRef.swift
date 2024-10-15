@@ -43,12 +43,12 @@ public struct TypedColumnRef<Value: Bindable>: ColumnRef {
 
     /// SQL reference to the column.
     public var _sqlRef: String {
-        "\"\(tableName)\".\"\(columnName)\""
+        "\(tableName).\(columnName)"
     }
 
     /// SQL name of the column.
     public var _sqlName: String {
-        "\"\(columnName)\""
+        columnName
     }
 
     /// Binder that binds the values to the statement.
@@ -85,12 +85,12 @@ public struct IfNullColumnRef<Value: Bindable>: ColumnRef {
 
     /// SQL reference to the column.
     public var _sqlRef: String {
-        "IFNULL(\"\(tableName)\".\"\(columnName)\", ?)"
+        "IFNULL(\(tableName).\(columnName), ?)"
     }
 
     /// SQL name of the column.
     public var _sqlName: String {
-        "IFNULL(\"\(columnName)\", ?)"
+        "IFNULL(\(columnName), ?)"
     }
 
     /// Binder that binds the values to the statement.
