@@ -198,7 +198,7 @@ final class NonDefaultsTests: XCTestCase {
                         sets.append("\\"updated_at\\" = ?")
                         setBinds.append(row.updatedAt.asBinder)
                             } else {
-                                throw DB4SwiftError(message: "\\(column) is not a column")
+                                throw TableError(message: "\\(column) is not a column")
                             }
                         }
 

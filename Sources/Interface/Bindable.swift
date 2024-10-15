@@ -220,7 +220,7 @@ extension String: Bindable {
         if let cString = sqlite3_column_text(stmt.stmtPtr, index) {
             return String(cString: cString)
         } else {
-            throw RelationalSwiftError(message: "sqlite3_column_text returned nil", code: -1)
+            throw InterfaceError(message: "sqlite3_column_text returned nil", code: -1)
         }
     }
 
@@ -244,7 +244,7 @@ extension UUID: Bindable {
             let mem = blob.bindMemory(to: uuid_t.self, capacity: 1)
             return UUID(uuid: mem.pointee)
         } else {
-            throw RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)
+            throw InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)
         }
     }
 
@@ -268,7 +268,7 @@ extension Data: Bindable {
             let count = sqlite3_column_bytes(stmt.stmtPtr, index)
             return Data(bytes: blob, count: Int(count))
         } else {
-            throw RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)
+            throw InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)
         }
     }
 
@@ -312,7 +312,7 @@ extension Bindable where Self: Codable {
             let decoder = JSONDecoder()
             return try decoder.decode(Self.self, from: data)
         } else {
-            throw RelationalSwiftError(message: "sqlite3_column_blob returned nil", code: -1)
+            throw InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)
         }
     }
 
@@ -336,7 +336,7 @@ extension Bindable where Self: RawRepresentable, RawValue: Bindable {
         if let value = Self(rawValue: rawValue) {
             return value
         } else {
-            throw RelationalSwiftError(
+            throw InterfaceError(
                 message: "failed to map value \"\(rawValue)\" to \(String(describing: Self.self))",
                 code: -1
             )

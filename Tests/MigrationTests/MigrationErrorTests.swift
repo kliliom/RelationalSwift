@@ -7,7 +7,7 @@ import Testing
 
 @testable import Migration
 
-@Suite
+@Suite("Migration Error Tests")
 struct MigrationErrorTests {
     @Test("Initializer")
     func initializer() {

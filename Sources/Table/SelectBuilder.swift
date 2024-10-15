@@ -95,7 +95,7 @@ struct SelectBuilder {
     /// - Returns: SQL statement.
     func statement() throws -> String {
         guard !columns.isEmpty else {
-            throw DB4SwiftError(message: "no columns to select")
+            throw TableError(message: "no columns to select")
         }
         var statement = ["SELECT", columns.joined(separator: ", "), "FROM", from]
         if let condition {

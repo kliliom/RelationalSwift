@@ -20,7 +20,7 @@ public struct DatabaseHandle: ~Copyable, Sendable {
     deinit {
         let result = sqlite3_close(ptr)
         if result != SQLITE_OK {
-            let error = RelationalSwiftError(message: String(cString: sqlite3_errmsg(ptr)), code: result)
+            let error = InterfaceError(message: String(cString: sqlite3_errmsg(ptr)), code: result)
             Task {
                 await Database.logger(error)
             }
@@ -77,7 +77,7 @@ extension Database {
     /// - Returns: The opened database.
     public static func open(url: URL) throws -> Database {
         guard url.isFileURL else {
-            throw RelationalSwiftError(message: "can not open non-file url", code: -1)
+            throw InterfaceError(message: "can not open non-file url", code: -1)
         }
         var ptr: OpaquePointer?
         let path: String = if #available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *) {
@@ -125,7 +125,7 @@ extension Database {
         var ptr: OpaquePointer?
         try check(sqlite3_prepare_v2(db.ptr, statement, -1, &ptr, nil), db: db.ptr, is: SQLITE_OK)
         guard let ptr else {
-            throw RelationalSwiftError(message: "nil handle while sqlite3_prepare_v2 == SQLITE_OK", code: -1)
+            throw InterfaceError(message: "nil handle while sqlite3_prepare_v2 == SQLITE_OK", code: -1)
         }
         return StatementHandle(dbPtr: db.ptr, stmtPtr: ptr)
     }

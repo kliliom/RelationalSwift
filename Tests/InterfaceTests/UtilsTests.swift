@@ -16,13 +16,13 @@ struct UtilsTests {
         let ptr = await db.db.ptr
 
         await Global.shared.run {
-            #expect(throws: RelationalSwiftError(message: "not an error", code: 0)) {
+            #expect(throws: InterfaceError(message: "not an error", code: 0)) {
                 try check(0, is: 1)
             }
         }
 
         await Global.shared.run {
-            #expect(throws: RelationalSwiftError(message: "not an error", code: 0)) {
+            #expect(throws: InterfaceError(message: "not an error", code: 0)) {
                 try check(0, db: ptr, is: 1)
             }
         }
@@ -34,13 +34,13 @@ struct UtilsTests {
         let ptr = await db.db.ptr
 
         await Global.shared.run {
-            #expect(throws: RelationalSwiftError(message: "not an error", code: 0)) {
+            #expect(throws: InterfaceError(message: "not an error", code: 0)) {
                 try check(0, in: 1, 2, 3)
             }
         }
 
         await Global.shared.run {
-            #expect(throws: RelationalSwiftError(message: "not an error", code: 0)) {
+            #expect(throws: InterfaceError(message: "not an error", code: 0)) {
                 try check(0, db: ptr, in: 1, 2, 3)
             }
         }

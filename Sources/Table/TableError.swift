@@ -1,12 +1,12 @@
 //
-//  Error.swift
+//  TableError.swift
 //  Created by Kristof Liliom in 2024.
 //
 
 import Foundation
 
-/// Errors that can be thrown by the DB4Swift.
-public struct DB4SwiftError: Error, Equatable {
+/// Errors that can be thrown by the RelationalSwift.
+public struct TableError: Error, Equatable {
     /// Action that was being performed when the error occurred.
     public let message: String
 
@@ -17,7 +17,7 @@ public struct DB4SwiftError: Error, Equatable {
     }
 }
 
-extension DB4SwiftError: LocalizedError {
+extension TableError: LocalizedError {
     public var errorDescription: String? {
         message
     }

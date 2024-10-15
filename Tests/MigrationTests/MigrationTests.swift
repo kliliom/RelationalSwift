@@ -104,7 +104,7 @@ struct MigrationTests {
         try await migration1.migrate(database: db)
 
         let migration2 = Migration(changeSets: [changeSet1, changeSet2, invalidChangeSet])
-        try await #require(throws: RelationalSwiftError(message: "no such table: test_table", code: 1)) {
+        try await #require(throws: InterfaceError(message: "no such table: test_table", code: 1)) {
             try await migration2.migrate(database: db)
         }
 
@@ -138,7 +138,7 @@ struct MigrationTests {
         try await migration1.migrate(databaseAt: fileURL)
 
         let migration2 = Migration(changeSets: [changeSet1, changeSet2, invalidChangeSet])
-        try await #require(throws: RelationalSwiftError(message: "no such table: test_table", code: 1)) {
+        try await #require(throws: InterfaceError(message: "no such table: test_table", code: 1)) {
             try await migration2.migrate(databaseAt: fileURL)
         }
 
@@ -172,7 +172,7 @@ struct MigrationTests {
         try await migration1.migrate(databaseAt: fileURL)
 
         let migration2 = Migration(changeSets: [changeSet1, changeSet2, invalidChangeSet])
-        try await #require(throws: RelationalSwiftError(message: "no such table: test_table", code: 1)) {
+        try await #require(throws: InterfaceError(message: "no such table: test_table", code: 1)) {
             try await migration2.migrate(databaseAt: fileURL, dryRun: true)
         }
 
@@ -209,7 +209,7 @@ struct MigrationTests {
         try await migration1.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL)
 
         let migration2 = Migration(changeSets: [changeSet1, changeSet2, invalidChangeSet])
-        try await #require(throws: RelationalSwiftError(message: "no such table: test_table", code: 1)) {
+        try await #require(throws: InterfaceError(message: "no such table: test_table", code: 1)) {
             try await migration2.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL)
         }
 
@@ -245,7 +245,7 @@ struct MigrationTests {
         try await migration1.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL)
 
         let migration2 = Migration(changeSets: [changeSet1, changeSet2, invalidChangeSet])
-        try await #require(throws: RelationalSwiftError(message: "no such table: test_table", code: 1)) {
+        try await #require(throws: InterfaceError(message: "no such table: test_table", code: 1)) {
             try await migration2.migrate(databaseAt: fileURL, usingTemporaryFileAt: temporaryFileURL, dryRun: true)
         }
 

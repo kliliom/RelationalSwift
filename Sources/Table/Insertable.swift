@@ -65,7 +65,7 @@ extension Database {
                 }
             )
             guard let first = rows.first else {
-                throw DB4SwiftError(message: "failed to get row by rowid")
+                throw TableError(message: "failed to get row by rowid")
             }
             row = first
         }

@@ -93,7 +93,7 @@ struct PrimaryKeyMutableExtension {
                     /* do nothing */
                 \(columnCases)
                 } else {
-                    throw DB4SwiftError(message: "\\(column) is not a column")
+                    throw TableError(message: "\\(column) is not a column")
                 }
             }
 

@@ -1,12 +1,12 @@
 //
-//  Error.swift
+//  InterfaceError.swift
 //  Created by Kristof Liliom in 2024.
 //
 
 import Foundation
 
 /// Errors that can be thrown by the RelationalSwift client.
-public struct RelationalSwiftError: Error, Equatable {
+public struct InterfaceError: Error, Equatable {
     /// Action that was being performed when the error occurred.
     public let message: String
     /// SQLite error code.
@@ -22,7 +22,7 @@ public struct RelationalSwiftError: Error, Equatable {
     }
 }
 
-extension RelationalSwiftError: LocalizedError {
+extension InterfaceError: LocalizedError {
     public var errorDescription: String? {
         "\(message) (\(code))"
     }

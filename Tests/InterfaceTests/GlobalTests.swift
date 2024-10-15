@@ -29,7 +29,7 @@ struct GlobalTests {
         })
         await Global.shared.runLogError {
             count.increment()
-            throw RelationalSwiftError(message: "not an error", code: 0)
+            throw InterfaceError(message: "not an error", code: 0)
         }
         #expect(count.value == 1)
 
@@ -43,8 +43,8 @@ struct GlobalTests {
             }
         }
 
-        let expectedError = RelationalSwiftError(message: "not an error", code: 0)
-        #expect(errorReference.value as? RelationalSwiftError == expectedError)
+        let expectedError = InterfaceError(message: "not an error", code: 0)
+        #expect(errorReference.value as? InterfaceError == expectedError)
     }
 
     @Test("Log error with default logger")
@@ -53,7 +53,7 @@ struct GlobalTests {
         await Database.setDefaultLogger()
         await Global.shared.runLogError {
             count.increment()
-            throw RelationalSwiftError(message: "not an error", code: 0)
+            throw InterfaceError(message: "not an error", code: 0)
         }
         #expect(count.value == 1)
     }

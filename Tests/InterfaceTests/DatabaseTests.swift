@@ -20,7 +20,7 @@ struct DatabaseTests {
             _ = stmt
         }
 
-        await #expect(throws: RelationalSwiftError(message: "nil handle while sqlite3_prepare_v2 == SQLITE_OK", code: -1)) {
+        await #expect(throws: InterfaceError(message: "nil handle while sqlite3_prepare_v2 == SQLITE_OK", code: -1)) {
             _ = try await db.prepare(statement: "")
         }
     }
@@ -150,7 +150,7 @@ struct DatabaseTests {
         }
         _ = try await Database.open(url: url)
 
-        await #expect(throws: RelationalSwiftError(message: "can not open non-file url", code: -1)) {
+        await #expect(throws: InterfaceError(message: "can not open non-file url", code: -1)) {
             _ = try await Database.open(url: URL(string: "https://www.google.com")!)
         }
     }
