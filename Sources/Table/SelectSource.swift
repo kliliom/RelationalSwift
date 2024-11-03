@@ -7,7 +7,7 @@ import Foundation
 import Interface
 
 /// Select source.
-public struct SelectSource<T: TableRef> {
+public struct SelectSource<T: TableRef>: Sendable {
     /// Database.
     let database: Database
 
@@ -48,11 +48,12 @@ public struct SelectSource<T: TableRef> {
     ///   - limit: Row limit.
     ///   - offset: Row offset.
     /// - Returns: Result of the query.
+    @DatabaseActor
     public func select<each Column: ColumnRef>(
         _ block: (T) -> (repeat each Column),
         limit: Int? = nil,
         offset: Int? = nil
-    ) async throws -> [(repeat (each Column).ValueType)] {
+    ) throws -> [(repeat (each Column).ValueType)] {
         let columnRefs = block(tableRef)
         var columnSqlRefs: [any ColumnRef] = []
         repeat (columnSqlRefs.append(each columnRefs))
@@ -65,7 +66,7 @@ public struct SelectSource<T: TableRef> {
             offset: offset
         )
         let database = database
-        return try await database.query(
+        return try database.query(
             select.statement(),
             binder: select.binder,
             columns: repeat each columnRefs
@@ -77,10 +78,11 @@ public struct SelectSource<T: TableRef> {
     ///   - limit: Row limit.
     ///   - offset: Row offset.
     /// - Returns: Result of the query.
+    @DatabaseActor
     public func select(
         limit: Int? = nil,
         offset: Int? = nil
-    ) async throws -> [T.TableType] {
+    ) throws -> [T.TableType] {
         let select = SelectBuilder(
             from: tableRef._sqlFrom,
             columns: tableRef._readColumnSqlRefs,
@@ -89,7 +91,7 @@ public struct SelectSource<T: TableRef> {
             offset: offset
         )
         let database = database
-        return try await database.query(select.statement(), binder: select.binder) { stmt in
+        return try database.query(select.statement(), binder: select.binder) { stmt in
             var index = ManagedIndex()
             return try T.TableType.read(from: stmt, startingAt: &index)
         }
@@ -98,26 +100,29 @@ public struct SelectSource<T: TableRef> {
     /// Executes a select query for all columns and returns the first entry (if exists).
     /// - Returns: First entry of the query or nil.
     /// - Parameter block: Columns builder block.
+    @DatabaseActor
     public func selectFirst<each Column: ColumnRef>(
         _ block: (T) -> (repeat each Column)
-    ) async throws -> (repeat (each Column).ValueType)? {
-        try await select(block, limit: 1).first
+    ) throws -> (repeat (each Column).ValueType)? {
+        try select(block, limit: 1).first
     }
 
     /// Executes a select query for all columns and returns the first entry (if exists).
     /// - Returns: First entry of the query or nil.
-    public func selectFirst() async throws -> T.TableType? {
-        try await select(limit: 1).first
+    @DatabaseActor
+    public func selectFirst() throws -> T.TableType? {
+        try select(limit: 1).first
     }
 
     /// Executes an update statement.
     /// - Parameters:
     ///   - columns: Columns to update.
     ///   - values: New values for the columns.
+    @DatabaseActor
     public func update<each Column: ColumnRef>(
         columns: repeat KeyPath<T, each Column>,
         values: repeat (each Column).ValueType
-    ) async throws {
+    ) throws {
         var setters = [ColumnValueSetter]()
         repeat setters.append(
             ColumnValueSetter(
@@ -132,17 +137,18 @@ public struct SelectSource<T: TableRef> {
             condition: condition
         )
         let database = database
-        return try await database.exec(stmt.statement(), binder: stmt.binder)
+        return try database.exec(stmt.statement(), binder: stmt.binder)
     }
 
     /// Executes a delete statement.
-    public func delete() async throws {
+    @DatabaseActor
+    public func delete() throws {
         let stmt = DeleteBuilder(
             from: tableRef._sqlFrom,
             condition: condition
         )
         let database = database
-        return try await database.exec(stmt.statement(), binder: stmt.binder)
+        return try database.exec(stmt.statement(), binder: stmt.binder)
     }
 
     /// Executes a count statement.
@@ -150,10 +156,11 @@ public struct SelectSource<T: TableRef> {
     ///   - distinct: Count only distinct rows. Default is `false`.
     ///   - block: Column builder block.
     /// - Returns: The count of the column vaues.
+    @DatabaseActor
     public func count(
         distinct: Bool = false,
         _ block: (T) -> any ColumnRef
-    ) async throws -> Int64 {
+    ) throws -> Int64 {
         let stmt = CountBuilder(
             from: tableRef._sqlFrom,
             column: block(tableRef),
@@ -161,7 +168,7 @@ public struct SelectSource<T: TableRef> {
             distinct: distinct
         )
         let database = database
-        return try await database.query(stmt.statement(), binder: stmt.binder) { stmt in
+        return try database.query(stmt.statement(), binder: stmt.binder) { stmt in
             var index = ManagedIndex()
             return try Int64.column(of: stmt, at: &index)
         }.first ?? 0
@@ -169,13 +176,14 @@ public struct SelectSource<T: TableRef> {
 
     /// Executes a count statement
     /// - Returns: The count of the rows.
-    public func count() async throws -> Int64 {
+    @DatabaseActor
+    public func count() throws -> Int64 {
         let stmt = CountBuilder(
             from: tableRef._sqlFrom,
             condition: condition
         )
         let database = database
-        return try await database.query(stmt.statement(), binder: stmt.binder) { stmt in
+        return try database.query(stmt.statement(), binder: stmt.binder) { stmt in
             var index = ManagedIndex()
             return try Int64.column(of: stmt, at: &index)
         }.first ?? 0

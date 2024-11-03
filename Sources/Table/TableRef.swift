@@ -7,7 +7,7 @@ import Foundation
 import Interface
 
 /// A reference to a table in the database.
-public protocol TableRef {
+public protocol TableRef: Sendable {
     /// Table type.
     associatedtype TableType: Table
 

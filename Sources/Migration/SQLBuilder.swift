@@ -30,7 +30,7 @@ public class SQLBuilder {
 }
 
 /// SQL convertible.
-public protocol SQLConvertible {
+public protocol SQLConvertible: Sendable {
     /// Appends the SQL representation to the builder.
     /// - Parameter builder: SQL builder.
     func append(to builder: SQLBuilder)
