@@ -58,6 +58,7 @@ public struct TableMacro: MemberMacro, ExtensionMacro {
             return [
                 TableExtension.syntax(for: table),
                 InsertableExtension.syntax(for: table),
+                PrimaryKeyAccessibleExtension.syntax(for: table),
                 PrimaryKeyMutableExtension.syntax(for: table),
             ].compactMap(\.self)
         } catch {

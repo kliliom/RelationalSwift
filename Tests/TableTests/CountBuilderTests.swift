@@ -42,7 +42,7 @@ struct CountBuilderTests {
             statement,
             bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
             step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        ).first ?? 0
+        ).first
         #expect(count == 3)
     }
 
@@ -64,7 +64,7 @@ struct CountBuilderTests {
             statement,
             bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
             step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        ).first ?? 0
+        ).first
         #expect(count == 3)
     }
 
@@ -87,7 +87,7 @@ struct CountBuilderTests {
             statement,
             bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
             step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        ).first ?? 0
+        ).first
         #expect(count == 2)
     }
 
@@ -109,7 +109,7 @@ struct CountBuilderTests {
             statement,
             bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
             step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        ).first ?? 0
+        ).first
         #expect(count == 1)
     }
 }

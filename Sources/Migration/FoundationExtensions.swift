@@ -33,8 +33,6 @@ protocol OptionalProtocol<WrappedType> {
 
     /// The wrapped type.
     static var wrappedType: WrappedType.Type { get }
-
-    var anyWrappedValue: WrappedType? { get }
 }
 
 extension Optional: OptionalProtocol {
@@ -43,27 +41,11 @@ extension Optional: OptionalProtocol {
     static var wrappedType: Wrapped.Type {
         Wrapped.self
     }
-
-    var anyWrappedValue: Wrapped? {
-        self
-    }
 }
 
 extension RawRepresentable {
     /// The raw value type.
     static var rawValueType: any Any.Type {
         RawValue.self
-    }
-}
-
-extension Data {
-    func hexEncodedString() -> String {
-        map { String(format: "%02x", $0) }.joined()
-    }
-}
-
-extension UUID {
-    func hexEncodedString() -> String {
-        uuidString.replacingOccurrences(of: "-", with: "").lowercased()
     }
 }

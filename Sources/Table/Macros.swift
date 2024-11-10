@@ -10,11 +10,12 @@
 )
 @attached(
     extension,
-    conformances: Table, PrimaryKeyMutable, Insertable,
+    conformances: Table, PrimaryKeyAccessible, PrimaryKeyMutable, Insertable,
     names:
     named(read(from:startingAt:)),
+    named(_primaryKey), named(selectAction),
     named(insertAction), named(readByRowIDAction), named(createTableAction),
-    named(KeyType), named(updateAction), named(partialUpdateAction(_:columns:)), named(deleteAction)
+    named(KeyType), named(updateAction), named(partialUpdateAction), named(upsertAction), named(deleteAction)
 )
 public macro Table(
     _ name: String? = nil,

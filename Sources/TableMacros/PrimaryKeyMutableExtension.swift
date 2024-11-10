@@ -84,7 +84,7 @@ struct PrimaryKeyMutableExtension {
             .joined(separator: "\n")
 
         return DeclSyntax(stringLiteral: """
-        static func updateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Binder) {
+        static func partialUpdateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Binder) {
             var sets = [String]()
             var setBinds = [Binder]()
 
@@ -113,6 +113,54 @@ struct PrimaryKeyMutableExtension {
                 }
             )
         }
+        """)
+    }
+
+    private var upsertFuncDecl: DeclSyntax {
+        let pks = table.columns.filter(\.attribute.primaryKey)
+        precondition(!pks.isEmpty)
+
+        guard pks.allSatisfy({ $0.attribute.insert ?? true }) else {
+            return DeclSyntax(stringLiteral: """
+            static let upsertAction: (String, @Sendable (\(table.codeName)) -> Binder)? = nil
+            """)
+        }
+
+        let columns = table.columns.filter { $0.attribute.insert ?? true }
+
+        let colNames = columns
+            .map(\.sqlIdentifier)
+            .joined(separator: ", ")
+        let values = columns
+            .map { _ in "?" }
+            .joined(separator: ", ")
+        let valueBinds = columns
+            .map { "try \($0.codeType).bind(to: stmt, value: row.\($0.codeName), at: &index)" }
+            .joined(separator: "\n")
+        let conflictKeys = pks
+            .map(\.sqlIdentifier)
+            .joined(separator: ", ")
+        let updateKeys = columns
+            .filter { $0.attribute.update ?? !$0.attribute.primaryKey }
+            .map { "\($0.sqlIdentifier) = EXCLUDED.\($0.sqlIdentifier)" }
+            .joined(separator: ", ")
+
+        return DeclSyntax(stringLiteral: """
+        static let upsertAction: (String, @Sendable (\(table.codeName)) -> Binder)? =
+            (
+                \"\"\"
+                INSERT INTO \(table.sqlIdentifier) (\(colNames))
+                VALUES (\(values))
+                ON CONFLICT(\(conflictKeys))
+                DO UPDATE SET \(updateKeys)
+                \"\"\",
+                { row in
+                    { stmt, index in
+                        // VALUES
+                        \(valueBinds)
+                    }
+                }
+            )
         """)
     }
 
@@ -149,6 +197,7 @@ struct PrimaryKeyMutableExtension {
             typealiasDecl,
             updateFuncDecl,
             partialUpdateFuncDecl,
+            upsertFuncDecl,
             deleteFuncDecl,
         ]
     }

@@ -159,6 +159,25 @@ final class NonDefaultsTests: XCTestCase {
                         \"""
                 }
 
+                extension Contact: RelationalSwift.PrimaryKeyAccessible {
+                    var _primaryKey: KeyType {
+                        id
+                    }
+                    static let selectAction: (String, @Sendable (KeyType) -> Binder) =
+                        (
+                            \"""
+                            SELECT * FROM "papaya"
+                            WHERE "apple" == ?
+                            \""",
+                            { key in
+                                { stmt, index in
+                                    // WHERE
+                                    try Int32.bind(to: stmt, value: key, at: &index)
+                                }
+                            }
+                        )
+                }
+
                 extension Contact: RelationalSwift.PrimaryKeyMutable {
                     typealias KeyType = (Int32)
                     static let updateAction: (String, @Sendable (Contact) -> Binder) =
@@ -180,7 +199,7 @@ final class NonDefaultsTests: XCTestCase {
                                 }
                             }
                         )
-                    static func updateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Binder) {
+                    static func partialUpdateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Binder) {
                         var sets = [String]()
                         var setBinds = [Binder]()
 
@@ -220,6 +239,25 @@ final class NonDefaultsTests: XCTestCase {
                             }
                         )
                     }
+                    static let upsertAction: (String, @Sendable (Contact) -> Binder)? =
+                        (
+                            \"""
+                            INSERT INTO "papaya" ("apple", "banana", "peach", "created_at", "updated_at")
+                            VALUES (?, ?, ?, ?, ?)
+                            ON CONFLICT("apple")
+                            DO UPDATE SET "banana" = EXCLUDED."banana", "peach" = EXCLUDED."peach", "updated_at" = EXCLUDED."updated_at"
+                            \""",
+                            { row in
+                                { stmt, index in
+                                    // VALUES
+                                    try Int32.bind(to: stmt, value: row.id, at: &index)
+                                    try Int.bind(to: stmt, value: row.age, at: &index)
+                                    try String.bind(to: stmt, value: row.gender, at: &index)
+                                    try Date.bind(to: stmt, value: row.createdAt, at: &index)
+                                    try Date.bind(to: stmt, value: row.updatedAt, at: &index)
+                                }
+                            }
+                        )
                     static let deleteAction: (String, @Sendable (Contact) -> Binder) =
                         (
                             \"""
