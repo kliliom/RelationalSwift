@@ -21,11 +21,17 @@ public struct DatabaseHandle: ~Copyable, Sendable {
         let result = sqlite3_close(ptr)
         if result != SQLITE_OK {
             let error = InterfaceError(message: String(cString: sqlite3_errmsg(ptr)), code: result)
-            Task {
-                await Database.logger(error)
-            }
+            try logAndIgnoreError({ throw error }())
         }
     }
+}
+
+/// Database options.
+private struct DatabaseOptions: OptionSet {
+    let rawValue: UInt32
+
+    /// Cache and reuse the prepared statements.
+    static let persistent = DatabaseOptions(rawValue: 1 << 0)
 }
 
 /// Database actor.
@@ -34,10 +40,22 @@ public final class Database: Sendable {
     /// Database handle.
     let db: DatabaseHandle
 
+    /// Database options.
+    private var options: DatabaseOptions = []
+
+    /// Statement cache.
+    private var statementCache: [String: OpaquePointer] = [:]
+
     /// Initializes a database actor.
     /// - Parameter db: Database handle.
     init(db: consuming DatabaseHandle) {
         self.db = db
+    }
+
+    deinit {
+        for (_, stmtPtr) in statementCache {
+            sqlite3_finalize(stmtPtr)
+        }
     }
 }
 
@@ -96,23 +114,26 @@ public struct StatementHandle: ~Copyable, Sendable {
     let dbPtr: OpaquePointer
     /// Statement pointer.
     let stmtPtr: OpaquePointer
+    /// Whether to free the statement on deinit.
+    let freeOnDeinit: Bool
 
     /// Initializes a statement handle.
     /// - Parameters:
     ///   - dbPtr: Database pointer.
     ///   - stmtPtr: Statement pointer.
-    init(dbPtr: OpaquePointer, stmtPtr: OpaquePointer) {
+    ///   - freeOnDeinit: Whether to free the statement on deinit.
+    init(dbPtr: OpaquePointer, stmtPtr: OpaquePointer, freeOnDeinit: Bool) {
         self.dbPtr = dbPtr
         self.stmtPtr = stmtPtr
+        self.freeOnDeinit = freeOnDeinit
     }
 
     deinit {
-        do {
-            try check(sqlite3_finalize(stmtPtr), db: dbPtr, is: SQLITE_OK)
-        } catch {
-            Task {
-                await Database.logger(error)
-            }
+        if freeOnDeinit {
+            try logAndIgnoreError(check(sqlite3_finalize(stmtPtr), db: dbPtr, is: SQLITE_OK))
+        } else {
+            try logAndIgnoreError(check(sqlite3_reset(stmtPtr), db: dbPtr, is: SQLITE_OK))
+            try logAndIgnoreError(check(sqlite3_clear_bindings(stmtPtr), db: dbPtr, is: SQLITE_OK))
         }
     }
 }
@@ -122,12 +143,28 @@ extension Database {
     /// - Parameter statement: The statement to prepare.
     /// - Returns: The prepared statement.
     public func prepare(statement: String) throws -> StatementHandle {
+        let useCache = options.contains(.persistent)
+
+        if useCache, let stmtPtr = statementCache[statement] {
+            return StatementHandle(dbPtr: db.ptr, stmtPtr: stmtPtr, freeOnDeinit: false)
+        }
+
         var ptr: OpaquePointer?
-        try check(sqlite3_prepare_v2(db.ptr, statement, -1, &ptr, nil), db: db.ptr, is: SQLITE_OK)
+        let flags: UInt32 = if useCache {
+            UInt32(bitPattern: SQLITE_PREPARE_PERSISTENT)
+        } else {
+            0
+        }
+        try check(sqlite3_prepare_v3(db.ptr, statement, -1, flags, &ptr, nil), db: db.ptr, is: SQLITE_OK)
         guard let ptr else {
             throw InterfaceError(message: "nil handle while sqlite3_prepare_v2 == SQLITE_OK", code: -1)
         }
-        return StatementHandle(dbPtr: db.ptr, stmtPtr: ptr)
+
+        if useCache {
+            statementCache[statement] = ptr
+        }
+
+        return StatementHandle(dbPtr: db.ptr, stmtPtr: ptr, freeOnDeinit: !useCache)
     }
 
     /// Executes a statement.
@@ -266,5 +303,14 @@ extension Database {
             try exec("ROLLBACK TRANSACTION")
             throw error
         }
+    }
+
+    /// Executes a block of code with statement caching enabled.
+    /// - Parameter block: Block of code.
+    /// - Returns: Result of the block.
+    public func cached<T>(_ block: @DatabaseActor () throws -> T) throws -> T {
+        options.insert(.persistent)
+        defer { options.remove(.persistent) }
+        return try block()
     }
 }

@@ -30,13 +30,15 @@ extension Database {
     public func update<T: Table & PrimaryKeyMutable>(_ row: T) throws {
         let (statement, binderProvider) = T.updateAction
         let binder = binderProvider(row)
-        try exec(
-            statement,
-            bind: { stmt in
-                var index = ManagedIndex()
-                try binder(stmt, &index)
-            }
-        )
+        try cached {
+            try exec(
+                statement,
+                bind: { stmt in
+                    var index = ManagedIndex()
+                    try binder(stmt, &index)
+                }
+            )
+        }
     }
 
     /// Updates the specified columns of a row in the database.
@@ -50,13 +52,15 @@ extension Database {
         guard !columns.isEmpty else { return }
 
         let (statement, binder) = try T.partialUpdateAction(row, columns: columns)
-        try exec(
-            statement,
-            bind: { stmt in
-                var index = ManagedIndex()
-                try binder(stmt, &index)
-            }
-        )
+        try cached {
+            try exec(
+                statement,
+                bind: { stmt in
+                    var index = ManagedIndex()
+                    try binder(stmt, &index)
+                }
+            )
+        }
     }
 
     /// Updates the specified columns of a row in the database.
@@ -78,13 +82,15 @@ extension Database {
         }
         let (statement, binderProvider) = action
         let binder = binderProvider(row)
-        try exec(
-            statement,
-            bind: { stmt in
-                var index = ManagedIndex()
-                try binder(stmt, &index)
-            }
-        )
+        try cached {
+            try exec(
+                statement,
+                bind: { stmt in
+                    var index = ManagedIndex()
+                    try binder(stmt, &index)
+                }
+            )
+        }
     }
 
     /// Deletes a row from the database.
@@ -92,13 +98,15 @@ extension Database {
     public func delete<T: Table & PrimaryKeyMutable>(_ row: T) throws {
         let (statement, binderProvider) = T.deleteAction
         let binder = binderProvider(row)
-        try exec(
-            statement,
-            bind: { stmt in
-                var index = ManagedIndex()
-                try binder(stmt, &index)
-            }
-        )
+        try cached {
+            try exec(
+                statement,
+                bind: { stmt in
+                    var index = ManagedIndex()
+                    try binder(stmt, &index)
+                }
+            )
+        }
     }
 }
 

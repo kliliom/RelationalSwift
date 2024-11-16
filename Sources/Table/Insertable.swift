@@ -23,13 +23,15 @@ extension Database {
     public func insert<T: Table & Insertable>(_ row: T) throws {
         let (statement, binderProvider) = T.insertAction
         let binder = binderProvider(row)
-        try exec(
-            statement,
-            bind: { stmt in
-                var index = ManagedIndex()
-                try binder(stmt, &index)
-            }
-        )
+        try cached {
+            try exec(
+                statement,
+                bind: { stmt in
+                    var index = ManagedIndex()
+                    try binder(stmt, &index)
+                }
+            )
+        }
     }
 
     /// Inserts a row into the database.
@@ -42,28 +44,32 @@ extension Database {
         clearLastInsertedRowID()
         let (statement, binderProvider) = T.insertAction
         let binder = binderProvider(row)
-        try exec(
-            statement,
-            bind: { stmt in
-                var index = ManagedIndex()
-                try binder(stmt, &index)
-            }
-        )
-
-        if let rowID = lastInsertedRowID() {
-            let (statement, binderProvider) = T.readByRowIDAction
-            let binder = binderProvider(rowID)
-            let rows = try query(
+        try cached {
+            try exec(
                 statement,
                 bind: { stmt in
                     var index = ManagedIndex()
                     try binder(stmt, &index)
-                },
-                step: { stmt, _ in
-                    var index = ManagedIndex()
-                    return try T.read(from: stmt, startingAt: &index)
                 }
             )
+        }
+
+        if let rowID = lastInsertedRowID() {
+            let (statement, binderProvider) = T.readByRowIDAction
+            let binder = binderProvider(rowID)
+            let rows = try cached {
+                try query(
+                    statement,
+                    bind: { stmt in
+                        var index = ManagedIndex()
+                        try binder(stmt, &index)
+                    },
+                    step: { stmt, _ in
+                        var index = ManagedIndex()
+                        return try T.read(from: stmt, startingAt: &index)
+                    }
+                )
+            }
             guard let first = rows.first else {
                 throw TableError(message: "failed to get row by rowid")
             }

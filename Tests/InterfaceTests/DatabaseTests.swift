@@ -218,4 +218,37 @@ struct DatabaseTests {
         )
         #expect(rows == [1, 2])
     }
+
+    @Test("Cached")
+    func cached() async throws {
+        let db = try await Database.openInMemory()
+
+        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
+
+        let insertStmt = "INSERT INTO x (id) VALUES (?)"
+        try await db.exec(insertStmt, bind: 1)
+        try await db.cached {
+            try db.exec(insertStmt, bind: 2)
+            try db.exec(insertStmt, bind: 3)
+        }
+
+        var rows = try await db.query(
+            "SELECT id FROM x",
+            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
+        )
+        #expect(rows == [1, 2, 3])
+
+        let deleteStmt = "DELETE FROM x LIMIT 1"
+        try await db.exec(deleteStmt)
+        try await db.cached {
+            try db.exec(deleteStmt)
+            try db.exec(deleteStmt)
+        }
+
+        rows = try await db.query(
+            "SELECT id FROM x",
+            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
+        )
+        #expect(rows == [])
+    }
 }

@@ -28,12 +28,6 @@ final class Global {
     /// Runs a block on the shared executor and logs any errors.
     /// - Parameter block: Block to run.
     func runLogError(_ block: @Sendable () throws -> Void) {
-        do {
-            try block()
-        } catch {
-            Task {
-                await Database.logger(error)
-            }
-        }
+        try logAndIgnoreError(block())
     }
 }

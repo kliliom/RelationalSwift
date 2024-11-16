@@ -42,3 +42,15 @@ func check(_ block: @autoclosure () -> Int32, db: OpaquePointer? = nil, in resul
         throw InterfaceError(message: String(cString: sqlite3_errstr(code)), code: code)
     }
 }
+
+/// Logs an error and ignores it.
+/// - Parameter block: Block that might throw an error.
+func logAndIgnoreError(_ block: @autoclosure () throws -> Void) {
+    do {
+        try block()
+    } catch {
+        Task {
+            await Database.logger(error)
+        }
+    }
+}
