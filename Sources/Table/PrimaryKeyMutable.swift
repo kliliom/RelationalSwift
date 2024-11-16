@@ -9,6 +9,9 @@ import Interface
 public protocol PrimaryKeyMutable<KeyType> {
     associatedtype KeyType
 
+    /// Primary key of the row.
+    var _primaryKey: KeyType { get }
+
     /// Returns the SQL statement and binder provider for updating a row.
     static var updateAction: (String, @Sendable (Self) -> Binder) { get }
 
@@ -21,7 +24,7 @@ public protocol PrimaryKeyMutable<KeyType> {
     static var upsertAction: (String, @Sendable (Self) -> Binder)? { get }
 
     /// Returns the SQL statement and binder provider for deleting a row.
-    static var deleteAction: (String, @Sendable (Self) -> Binder) { get }
+    static var deleteAction: (String, @Sendable (KeyType) -> Binder) { get }
 }
 
 extension Database {
@@ -96,8 +99,17 @@ extension Database {
     /// Deletes a row from the database.
     /// - Parameter row: Row to delete.
     public func delete<T: Table & PrimaryKeyMutable>(_ row: T) throws {
+        try delete(from: T.self, byKey: row._primaryKey)
+    }
+
+    /// Deletes a row from the database by key.
+    /// - Parameters:
+    ///   - table: Table to delete from.
+    ///   - key: Key of the row to delete.
+    public func delete<T: Table & PrimaryKeyMutable>(from table: T.Type, byKey key: T.KeyType) throws {
+        _ = table
         let (statement, binderProvider) = T.deleteAction
-        let binder = binderProvider(row)
+        let binder = binderProvider(key)
         try cached {
             try exec(
                 statement,

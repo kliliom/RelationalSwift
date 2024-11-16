@@ -168,21 +168,29 @@ struct PrimaryKeyMutableExtension {
         let pks = table.columns.filter(\.attribute.primaryKey)
         precondition(!pks.isEmpty)
 
-        let wheres = pks
-            .map { "\($0.sqlIdentifier) == ?" }
-            .joined(separator: " AND ")
-        let whereBinds = pks
-            .map { "try \($0.codeType).bind(to: stmt, value: row.\($0.codeName), at: &index)" }
-            .joined(separator: "\n")
+        let wheres: String
+        let whereBinds: String
+        if pks.count == 1, let pk = pks.first {
+            wheres = "\(pk.sqlIdentifier) == ?"
+            whereBinds = "try \(pk.codeType).bind(to: stmt, value: key, at: &index)"
+        } else {
+            wheres = pks
+                .map { "\($0.sqlIdentifier) == ?" }
+                .joined(separator: " AND ")
+            whereBinds = pks
+                .enumerated()
+                .map { "try \($0.1.codeType).bind(to: stmt, value: key.\($0.0), at: &index)" }
+                .joined(separator: "\n")
+        }
 
         return DeclSyntax(stringLiteral: """
-        static let deleteAction: (String, @Sendable (\(table.codeName)) -> Binder) =
+        static let deleteAction: (String, @Sendable (KeyType) -> Binder) =
             (
                 \"\"\"
                 DELETE FROM \(table.sqlIdentifier)
                 WHERE \(wheres)
                 \"\"\",
-                { row in
+                { key in
                     { stmt, index in
                         // WHERE
                         \(whereBinds)

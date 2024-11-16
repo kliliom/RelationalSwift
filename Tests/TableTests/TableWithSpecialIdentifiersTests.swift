@@ -140,4 +140,14 @@ struct TableWithSpecialIdentifiersTests {
         let rows = try await db.from(TestEntry.table(as: "x\\\"😁d")).select()
         #expect(rows == [])
     }
+
+    @Test("Delete by key")
+    func deleteByKey() async throws {
+        var entry = entry
+        try await db.insert(&entry)
+        try await db.delete(from: TestEntry.self, byKey: entry.id)
+
+        let rows = try await db.from(TestEntry.table(as: "x\\\"😁d")).select()
+        #expect(rows == [])
+    }
 }

@@ -258,16 +258,16 @@ final class NonDefaultsTests: XCTestCase {
                                 }
                             }
                         )
-                    static let deleteAction: (String, @Sendable (Contact) -> Binder) =
+                    static let deleteAction: (String, @Sendable (KeyType) -> Binder) =
                         (
                             \"""
                             DELETE FROM "papaya"
                             WHERE "apple" == ?
                             \""",
-                            { row in
+                            { key in
                                 { stmt, index in
                                     // WHERE
-                                    try Int32.bind(to: stmt, value: row.id, at: &index)
+                                    try Int32.bind(to: stmt, value: key, at: &index)
                                 }
                             }
                         )
