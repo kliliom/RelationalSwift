@@ -167,4 +167,55 @@ struct DatabaseTests {
         try await db.exec("INSERT INTO x (id) VALUES (1)")
         #expect(await db.lastInsertedRowID() != nil)
     }
+
+    @Test("Transaction", arguments: [
+        TransactionKind.deferred,
+        TransactionKind.immediate,
+        TransactionKind.exclusive,
+    ])
+    func deferredTransaction(kind: TransactionKind) async throws {
+        struct SomeError: Error, Equatable {}
+
+        let db = try await Database.openInMemory()
+
+        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
+
+        try await db.transaction(kind: kind) {
+            try db.exec("INSERT INTO x (id) VALUES (1)")
+        }
+
+        var rows = try await db.query(
+            "SELECT id FROM x",
+            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
+        )
+        #expect(rows == [1])
+
+        await #expect(throws: SomeError()) {
+            try await db.transaction(kind: .deferred) {
+                try db.exec("DELETE FROM x")
+                throw SomeError()
+            }
+        }
+
+        rows = try await db.query(
+            "SELECT id FROM x",
+            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
+        )
+        #expect(rows == [1])
+
+        rows = try await db.transaction(kind: .deferred) {
+            try db.exec("INSERT INTO x (id) VALUES (2)")
+            return try db.query(
+                "SELECT id FROM x",
+                step: { stmt, _ in try Int.column(of: stmt, at: 0) }
+            )
+        }
+        #expect(rows == [1, 2])
+
+        rows = try await db.query(
+            "SELECT id FROM x",
+            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
+        )
+        #expect(rows == [1, 2])
+    }
 }

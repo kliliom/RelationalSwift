@@ -237,4 +237,34 @@ extension Database {
         guard id != clearedLastInsertedRowID else { return nil }
         return id
     }
+
+    /// Executes a transaction.
+    /// - Parameters:
+    ///   - kind: Transaction kind. Default is `.deferred`.
+    ///   - block: Transaction block.
+    /// - Returns: Result of the transaction.
+    public func transaction<T>(
+        kind: TransactionKind = .deferred,
+        _ block: @DatabaseActor () throws -> T
+    ) throws -> T {
+        let beginStatement = switch kind {
+        case .deferred:
+            "BEGIN DEFERRED TRANSACTION"
+        case .immediate:
+            "BEGIN IMMEDIATE TRANSACTION"
+        case .exclusive:
+            "BEGIN EXCLUSIVE TRANSACTION"
+        }
+
+        try exec(beginStatement)
+
+        do {
+            let result = try block()
+            try exec("COMMIT TRANSACTION")
+            return result
+        } catch {
+            try exec("ROLLBACK TRANSACTION")
+            throw error
+        }
+    }
 }
