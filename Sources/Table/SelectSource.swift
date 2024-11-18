@@ -201,9 +201,16 @@ public struct SelectSource<T: TableRef>: Sendable {
 
 extension Database {
     /// Initializes a new select source.
-    /// - Parameter table: Table reference.
+    /// - Parameter table: Table type.
     /// - Returns: Select source.
-    public nonisolated func from<T: TableRef>(_ table: T) -> SelectSource<T> {
-        SelectSource(database: self, tableRef: table, condition: nil)
+    public nonisolated func from<T: Table, R: TableRef>(_ table: T.Type) -> SelectSource<R> where T.TableRefType == R {
+        SelectSource(database: self, tableRef: table.table, condition: nil)
+    }
+
+    /// Initializes a new select source.
+    /// - Parameter tableRef: Table reference.
+    /// - Returns: Select source.
+    public nonisolated func from<R: TableRef>(_ tableRef: R) -> SelectSource<R> {
+        SelectSource(database: self, tableRef: tableRef, condition: nil)
     }
 }
