@@ -102,6 +102,14 @@ extension Bindable {
     }
 }
 
+extension Bindable {
+    public var managedBinder: Database.ManagedBinder {
+        { stmt, index in
+            try Self.bind(to: stmt, value: self, at: &index)
+        }
+    }
+}
+
 // MARK: - Bindable conformance for common types
 
 extension Int: Bindable {

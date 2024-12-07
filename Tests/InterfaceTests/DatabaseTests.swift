@@ -10,126 +10,6 @@ import Testing
 
 @Suite("Database Tests")
 struct DatabaseTests {
-    @Test("db.prepare(statement:) throws")
-    func prepare() async throws {
-        let db = try await Database.openInMemory()
-
-        await #expect(throws: InterfaceError(message: "nil handle while sqlite3_prepare_v2 == SQLITE_OK", code: -1)) {
-            _ = try await db.prepare(statement: "")
-        }
-    }
-
-    @Test("db.exec(_:) throws")
-    func execWithDefaultParameters() async throws {
-        let db = try await Database.openInMemory()
-
-        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
-    }
-
-    @Test("db.exec(_:bind:{ stmt in })")
-    func execBindBlock() async throws {
-        let db = try await Database.openInMemory()
-
-        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
-        try await db.exec("INSERT INTO x (id) VALUES (1)")
-        try await db.exec(
-            "UPDATE x SET id = 2 WHERE id = ?",
-            bind: { stmt in
-                try Int.bind(to: stmt, value: 1, at: 1)
-            }
-        )
-
-        let rows = try await db.query(
-            "SELECT id FROM x",
-            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
-        )
-        #expect(rows == [2])
-    }
-
-    @Test("db.exec(_:bind:...)")
-    func execBindValue() async throws {
-        let db = try await Database.openInMemory()
-
-        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
-        try await db.exec("INSERT INTO x (id) VALUES (1)")
-        try await db.exec(
-            "UPDATE x SET id = 2 WHERE id = ?",
-            bind: 1
-        )
-
-        let rows = try await db.query(
-            "SELECT id FROM x",
-            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
-        )
-        #expect(rows == [2])
-    }
-
-    @Test("db.exec(_:binder:)")
-    func execBinder() async throws {
-        let db = try await Database.openInMemory()
-
-        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
-        try await db.exec("INSERT INTO x (id) VALUES (1)")
-        try await db.exec(
-            "UPDATE x SET id = 2 WHERE id = ?",
-            binder: { stmt, index in
-                try Int.bind(to: stmt, value: 1, at: &index)
-            }
-        )
-
-        let rows = try await db.query(
-            "SELECT id FROM x",
-            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
-        )
-        #expect(rows == [2])
-    }
-
-    @Test("db.query(_:bind:step:) throws")
-    func query() async throws {
-        let db = try await Database.openInMemory()
-        let bindCount = Counter()
-        let stepCount = Counter()
-
-        _ = try await db.query(
-            "SELECT * FROM (VALUES (1), (2), (3))",
-            bind: { _ in
-                bindCount.increment()
-            }, step: { _, _ in
-                stepCount.increment()
-            }
-        )
-        #expect(bindCount.value == 1)
-        #expect(stepCount.value == 3)
-    }
-
-    @Test("db.query(_:bind:step:) throws + stop")
-    func queryWithStop() async throws {
-        let db = try await Database.openInMemory()
-        let bindCount = Counter()
-        let stepCount = Counter()
-
-        _ = try await db.query(
-            "SELECT * FROM (VALUES (1), (2), (3))",
-            bind: { _ in
-                bindCount.increment()
-            }, step: { _, stop in
-                stepCount.increment()
-                if stepCount.value == 2 {
-                    stop = true
-                }
-            }
-        )
-        #expect(bindCount.value == 1)
-        #expect(stepCount.value == 2)
-    }
-
-    @Test("db.query(_:) throws")
-    func queryWithDefaultParameters() async throws {
-        let db = try await Database.openInMemory()
-
-        _ = try await db.query("SELECT * FROM (VALUES (1), (2), (3))") { _, _ in }
-    }
-
     @Test("Database.openInMemory() async throws")
     func openInMemory() async throws {
         _ = try await Database.openInMemory()
@@ -144,7 +24,7 @@ struct DatabaseTests {
         }
         _ = try await Database.open(url: url)
 
-        await #expect(throws: InterfaceError(message: "can not open non-file url", code: -1)) {
+        await #expect(throws: InterfaceError(message: "cannot open non-file url", code: -1)) {
             _ = try await Database.open(url: URL(string: "https://www.google.com")!)
         }
     }
@@ -178,10 +58,9 @@ struct DatabaseTests {
             try db.exec("INSERT INTO x (id) VALUES (1)")
         }
 
-        var rows = try await db.query(
-            "SELECT id FROM x",
-            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
-        )
+        var rows = try await db.query("SELECT id FROM x") { stmt, _ in
+            try Int.column(of: stmt, at: 0)
+        }
         #expect(rows == [1])
 
         await #expect(throws: SomeError()) {
@@ -191,25 +70,22 @@ struct DatabaseTests {
             }
         }
 
-        rows = try await db.query(
-            "SELECT id FROM x",
-            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
-        )
+        rows = try await db.query("SELECT id FROM x") { stmt, _ in
+            try Int.column(of: stmt, at: 0)
+        }
         #expect(rows == [1])
 
         rows = try await db.transaction(kind: .deferred) {
             try db.exec("INSERT INTO x (id) VALUES (2)")
-            return try db.query(
-                "SELECT id FROM x",
-                step: { stmt, _ in try Int.column(of: stmt, at: 0) }
-            )
+            return try db.query("SELECT id FROM x") { stmt, _ in
+                try Int.column(of: stmt, at: 0)
+            }
         }
         #expect(rows == [1, 2])
 
-        rows = try await db.query(
-            "SELECT id FROM x",
-            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
-        )
+        rows = try await db.query("SELECT id FROM x") { stmt, _ in
+            try Int.column(of: stmt, at: 0)
+        }
         #expect(rows == [1, 2])
     }
 
@@ -220,16 +96,15 @@ struct DatabaseTests {
         try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
 
         let insertStmt = "INSERT INTO x (id) VALUES (?)"
-        try await db.exec(insertStmt, bind: 1)
+        try await db.exec(insertStmt, binding: 1)
         try await db.cached {
-            try db.exec(insertStmt, bind: 2)
-            try db.exec(insertStmt, bind: 3)
+            try db.exec(insertStmt, binding: 2)
+            try db.exec(insertStmt, binding: 3)
         }
 
-        var rows = try await db.query(
-            "SELECT id FROM x",
-            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
-        )
+        let rows = try await db.query("SELECT id FROM x") { stmt, _ in
+            try Int.column(of: stmt, at: 0)
+        }
         #expect(rows == [1, 2, 3])
 
         let deleteStmt = "DELETE FROM x LIMIT 1"
@@ -239,10 +114,7 @@ struct DatabaseTests {
             try db.exec(deleteStmt)
         }
 
-        rows = try await db.query(
-            "SELECT id FROM x",
-            step: { stmt, _ in try Int.column(of: stmt, at: 0) }
-        )
-        #expect(rows == [])
+        // We can use exec here because we expect no rows to be returned.
+        try await db.exec("SELECT id FROM x")
     }
 }

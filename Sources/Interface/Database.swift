@@ -76,7 +76,7 @@ extension Database {
     /// - Returns: The opened database.
     public static func open(url: URL) throws -> Database {
         guard url.isFileURL else {
-            throw InterfaceError(message: "can not open non-file url", code: -1)
+            throw InterfaceError(message: "cannot open non-file url", code: -1)
         }
         var ptr: OpaquePointer?
         let path: String = if #available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *) {
