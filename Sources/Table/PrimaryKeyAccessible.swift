@@ -13,7 +13,7 @@ public protocol PrimaryKeyAccessible<KeyType> {
     var _primaryKey: KeyType { get }
 
     /// Returns the SQL statement and binder provider for reading a row.
-    static var selectAction: (String, @Sendable (KeyType) -> Binder) { get }
+    static var selectAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) { get }
 }
 
 extension Database {
@@ -26,13 +26,11 @@ extension Database {
         let rows = try cached {
             try query(
                 statement,
-                bind: { stmt in
-                    var index = ManagedIndex()
+                binder: { stmt, index in
                     try binder(stmt, &index)
                 },
-                step: { stmt, _ in
-                    var index = ManagedIndex()
-                    return try T.read(from: stmt, startingAt: &index)
+                stepper: { stmt, index, _ in
+                    try T.read(from: stmt, startingAt: &index)
                 }
             )
         }

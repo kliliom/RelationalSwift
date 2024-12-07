@@ -83,12 +83,9 @@ struct RenameColumnTests {
         try await createTable.apply(to: db)
         try await renameColumn.apply(to: db)
 
-        let columns = try await db.query(
-            "PRAGMA table_info('test_table')",
-            step: { stmt, _ in
-                try String.column(of: stmt, at: 1)
-            }
-        )
+        let columns = try await db.query("PRAGMA table_info('test_table')") { stmt, _ in
+            try String.column(of: stmt, at: 1)
+        }
         #expect(columns.count == 1)
         #expect(columns.first == "renamed_column")
     }

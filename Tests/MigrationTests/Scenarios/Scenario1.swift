@@ -59,7 +59,7 @@ private let changeSetV2 = ChangeSet(id: "add users") {
     Execute { db in
         try db.exec("""
         INSERT INTO users (id, name, email) VALUES (?, 'John Doe', '')
-        """, bind: userID1)
+        """, binding: userID1)
     }
 
     CreateTable("user_addresses") {
@@ -75,7 +75,7 @@ private let changeSetV2 = ChangeSet(id: "add users") {
     Execute { db in
         try db.exec("""
         INSERT INTO user_addresses (user_id, address_id) VALUES (?, 1)
-        """, bind: userID1)
+        """, binding: userID1)
     }
 }
 
@@ -96,12 +96,10 @@ func migrateScenario1() async throws {
         JOIN user_addresses ua ON a.id = ua.address_id
         WHERE ua.user_id = ?
         """,
-        bind: { stmt in
-            var index = ManagedIndex()
+        binder: { stmt, index in
             try userID1.bind(to: stmt, at: &index)
         },
-        step: { stmt, _ in
-            var index = ManagedIndex()
+        stepper: { stmt, index, _ in
             let id = try Int.column(of: stmt, at: &index)
             let addressLine1 = try String.column(of: stmt, at: &index)
             let addressLine2 = try String?.column(of: stmt, at: &index)

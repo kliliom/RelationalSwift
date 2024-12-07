@@ -14,7 +14,7 @@ struct CountBuilder {
     let column: String
 
     /// Columns binders.
-    let columnBinders: [Binder]
+    let columnBinders: [Database.ManagedBinder]
 
     /// Condition.
     let condition: Condition?
@@ -69,8 +69,8 @@ struct CountBuilder {
     }
 
     /// Binder for the count statement.
-    var binder: Binder {
-        var binder: Binder = { _, _ in }
+    var binder: Database.ManagedBinder {
+        var binder: Database.ManagedBinder = { _, _ in }
         for columnBinder in columnBinders {
             let currentBinder = binder
             binder = { stmt, index in

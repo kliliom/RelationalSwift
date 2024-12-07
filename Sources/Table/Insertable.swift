@@ -8,10 +8,10 @@ import Interface
 /// Table with insertable rows.
 public protocol Insertable {
     /// Returns the SQL statement and binder provider for inserting a row.
-    static var insertAction: (String, @Sendable (Self) -> Binder) { get }
+    static var insertAction: (String, @Sendable (Self) -> Database.ManagedBinder) { get }
 
     /// Returns the SQL statement and binder provider for reading a row by row ID.
-    static var readByRowIDAction: (String, @Sendable (Int64) -> Binder) { get }
+    static var readByRowIDAction: (String, @Sendable (Int64) -> Database.ManagedBinder) { get }
 
     /// Returns the SQL statement for creating the table.
     static var createTableAction: String { get }
@@ -26,8 +26,7 @@ extension Database {
         try cached {
             try exec(
                 statement,
-                bind: { stmt in
-                    var index = ManagedIndex()
+                binder: { stmt, index in
                     try binder(stmt, &index)
                 }
             )
@@ -47,8 +46,7 @@ extension Database {
         try cached {
             try exec(
                 statement,
-                bind: { stmt in
-                    var index = ManagedIndex()
+                binder: { stmt, index in
                     try binder(stmt, &index)
                 }
             )
@@ -60,13 +58,11 @@ extension Database {
             let rows = try cached {
                 try query(
                     statement,
-                    bind: { stmt in
-                        var index = ManagedIndex()
+                    binder: { stmt, index in
                         try binder(stmt, &index)
                     },
-                    step: { stmt, _ in
-                        var index = ManagedIndex()
-                        return try T.read(from: stmt, startingAt: &index)
+                    stepper: { stmt, index, _ in
+                        try T.read(from: stmt, startingAt: &index)
                     }
                 )
             }

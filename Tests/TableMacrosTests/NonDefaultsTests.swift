@@ -114,7 +114,7 @@ final class NonDefaultsTests: XCTestCase {
                 }
 
                 extension Contact: RelationalSwift.Insertable {
-                    static let readByRowIDAction: (String, @Sendable (Int64) -> Binder) =
+                    static let readByRowIDAction: (String, @Sendable (Int64) -> Database.ManagedBinder) =
                         (
                             \"""
                             SELECT "apple", "pickle", "banana", "peach", "created_at", "updated_at"
@@ -128,7 +128,7 @@ final class NonDefaultsTests: XCTestCase {
                                 }
                             }
                         )
-                    static let insertAction: (String, @Sendable (Contact) -> Binder) =
+                    static let insertAction: (String, @Sendable (Contact) -> Database.ManagedBinder) =
                         (
                             \"""
                             INSERT INTO "papaya" ("apple", "banana", "peach", "created_at", "updated_at")
@@ -163,7 +163,7 @@ final class NonDefaultsTests: XCTestCase {
                     var _primaryKey: KeyType {
                         id
                     }
-                    static let selectAction: (String, @Sendable (KeyType) -> Binder) =
+                    static let selectAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) =
                         (
                             \"""
                             SELECT * FROM "papaya"
@@ -180,7 +180,7 @@ final class NonDefaultsTests: XCTestCase {
 
                 extension Contact: RelationalSwift.PrimaryKeyMutable {
                     typealias KeyType = (Int32)
-                    static let updateAction: (String, @Sendable (Contact) -> Binder) =
+                    static let updateAction: (String, @Sendable (Contact) -> Database.ManagedBinder) =
                         (
                             \"""
                             UPDATE "papaya" SET "pickle" = ?, "banana" = ?, "peach" = ?, "updated_at" = ?
@@ -199,25 +199,25 @@ final class NonDefaultsTests: XCTestCase {
                                 }
                             }
                         )
-                    static func partialUpdateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Binder) {
+                    static func partialUpdateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Database.ManagedBinder) {
                         var sets = [String]()
-                        var setBinds = [Binder]()
+                        var setBinds = [Database.ManagedBinder]()
 
                         for column in columns {
                             if false {
                                 /* do nothing */
                             } else if column == \\.name {
                         sets.append("\\"pickle\\" = ?")
-                        setBinds.append(row.name.asBinder)
+                        setBinds.append(row.name.managedBinder)
                             } else if column == \\.age {
                         sets.append("\\"banana\\" = ?")
-                        setBinds.append(row.age.asBinder)
+                        setBinds.append(row.age.managedBinder)
                             } else if column == \\.gender {
                         sets.append("\\"peach\\" = ?")
-                        setBinds.append(row.gender.asBinder)
+                        setBinds.append(row.gender.managedBinder)
                             } else if column == \\.updatedAt {
                         sets.append("\\"updated_at\\" = ?")
-                        setBinds.append(row.updatedAt.asBinder)
+                        setBinds.append(row.updatedAt.managedBinder)
                             } else {
                                 throw TableError(message: "\\(column) is not a column")
                             }
@@ -239,7 +239,7 @@ final class NonDefaultsTests: XCTestCase {
                             }
                         )
                     }
-                    static let upsertAction: (String, @Sendable (Contact) -> Binder)? =
+                    static let upsertAction: (String, @Sendable (Contact) -> Database.ManagedBinder)? =
                         (
                             \"""
                             INSERT INTO "papaya" ("apple", "banana", "peach", "created_at", "updated_at")
@@ -258,7 +258,7 @@ final class NonDefaultsTests: XCTestCase {
                                 }
                             }
                         )
-                    static let deleteAction: (String, @Sendable (KeyType) -> Binder) =
+                    static let deleteAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) =
                         (
                             \"""
                             DELETE FROM "papaya"

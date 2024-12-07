@@ -11,13 +11,13 @@ public struct ColumnValueSetter: Sendable {
     public var columnName: String
 
     /// Value binder.
-    public var valueBinder: Binder
+    public var valueBinder: Database.ManagedBinder
 
     /// Initializes a column value setter.
     /// - Parameters:
     ///   - columnName: Name of the column.
     ///   - valueBinder: Value binder.
-    public init(columnName: String, valueBinder: @escaping Binder) {
+    public init(columnName: String, valueBinder: @escaping Database.ManagedBinder) {
         self.columnName = columnName
         self.valueBinder = valueBinder
     }

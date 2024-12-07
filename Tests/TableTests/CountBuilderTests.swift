@@ -38,11 +38,11 @@ struct CountBuilderTests {
 
         #expect(statement == "SELECT COUNT(*) FROM t")
 
-        let count = try await db.query(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        ).first
+        let count = try await db.query(statement) { stmt, index in
+            try binder(stmt, &index)
+        } stepper: { stmt, index, _ in
+            try Int.column(of: stmt, at: &index)
+        }.first
         #expect(count == 3)
     }
 
@@ -60,11 +60,11 @@ struct CountBuilderTests {
 
         #expect(statement == "SELECT COUNT(x) FROM t")
 
-        let count = try await db.query(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        ).first
+        let count = try await db.query(statement) { stmt, index in
+            try binder(stmt, &index)
+        } stepper: { stmt, index, _ in
+            try Int.column(of: stmt, at: &index)
+        }.first
         #expect(count == 3)
     }
 
@@ -83,11 +83,11 @@ struct CountBuilderTests {
 
         #expect(statement == "SELECT COUNT(DISTINCT IFNULL(\"t\".\"x\", ?)) FROM \"t\"")
 
-        let count = try await db.query(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        ).first
+        let count = try await db.query(statement) { stmt, index in
+            try binder(stmt, &index)
+        } stepper: { stmt, index, _ in
+            try Int.column(of: stmt, at: &index)
+        }.first
         #expect(count == 2)
     }
 
@@ -105,11 +105,11 @@ struct CountBuilderTests {
 
         #expect(statement == "SELECT COUNT(x) FROM t WHERE x > ?")
 
-        let count = try await db.query(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        ).first
+        let count = try await db.query(statement) { stmt, index in
+            try binder(stmt, &index)
+        } stepper: { stmt, index, _ in
+            try Int.column(of: stmt, at: &index)
+        }.first
         #expect(count == 1)
     }
 }

@@ -232,24 +232,27 @@ extension Database {
     /// Executes a statement.
     /// - Parameters:
     ///   - statement: Statement to execute.
-    ///   - binding: Values to bind.
+    ///   - firstValue: First value to bind.
+    ///   - otherValues: Other values to bind.
     @inline(__always)
-    public func exec<each Bind: Bindable>(
+    public func exec<each Values: Bindable>(
         _ statement: String,
-        binding: repeat each Bind
+        binding firstValue: some Bindable,
+        _ otherValues: repeat each Values
     ) throws {
         // It should be possible to skip this "packing into an array" trick
         // in the future, but current Swift 6 compiler has an issue with this
-        // try exec(statement, binder: { stmt in
-        //     var index = ManagedIndex()
-        //     try repeat (each binding).bind(to: stmt, at: &index)
+        // try exec(statement, binder: { stmt, index in
+        //     try firstValue.bind(to: stmt, at: &index)
+        //     try repeat (each otherValues).bind(to: stmt, at: &index)
         // })
 
-        var binders = [ManagedBinder]()
-        repeat (binders.append((each binding).managedBinder))
+        var binders: [ManagedBinder] = [
+            firstValue.managedBinder,
+        ]
+        repeat (binders.append((each otherValues).managedBinder))
         let captured = binders
-        try exec(statement, binder: { stmt in
-            var index = ManagedIndex()
+        try exec(statement, binder: { stmt, index in
             try captured.forEach { try $0(stmt, &index) }
         })
     }
@@ -257,34 +260,35 @@ extension Database {
     /// Queries a statement.
     /// - Parameters:
     ///   - statement: Statement to execute.
-    ///   - binding: Values to bind.
+    ///   - firstValue: First value to bind.
+    ///   - otherValues: Other values to bind.
     ///   - stepper: Row reader.
     /// - Returns: Result of the query.
     @inline(__always)
-    public func query<R, each Bind: Bindable>(
+    public func query<R, each Values: Bindable>(
         _ statement: String,
-        binding: repeat each Bind,
+        binding firstValue: some Bindable,
+        _ otherValues: repeat each Values,
         stepper: ManagedStepper<R>
     ) throws -> [R] {
         // It should be possible to skip this "packing into an array" trick
         // in the future, but current Swift 6 compiler has an issue with this
-        // try query(statement, binder: { stmt in
-        //     var index = ManagedIndex()
-        //     repeat try (each Bind).bind(to: stmt, value: each binding, at: &index)
-        // }, stepper: { stmt, stop in
-        //     var index = ManagedIndex()
-        //     return try stepper(stmt, &index, &stop)
+        // try query(statement, binder: { stmt, index in
+        //     try firstValue.bind(to: stmt, at: &index)
+        //     repeat try (each Values).bind(to: stmt, value: each otherValues, at: &index)
+        // }, stepper: { stmt, index, stop in
+        //     try stepper(stmt, &index, &stop)
         // })
 
-        var binders = [ManagedBinder]()
-        repeat (binders.append((each binding).managedBinder))
+        var binders: [ManagedBinder] = [
+            firstValue.managedBinder,
+        ]
+        repeat (binders.append((each otherValues).managedBinder))
         let captured = binders
-        return try query(statement, binder: { stmt in
-            var index = ManagedIndex()
+        return try query(statement, binder: { stmt, index in
             try captured.forEach { try $0(stmt, &index) }
-        }, stepper: { stmt, stop in
-            var index = ManagedIndex()
-            return try stepper(stmt, &index, &stop)
+        }, stepper: { stmt, index, stop in
+            try stepper(stmt, &index, &stop)
         })
     }
 }

@@ -29,12 +29,9 @@ struct MigrationTests {
     }
 
     private func getColumnNames(from db: Database) async throws -> [String] {
-        try await db.query(
-            "PRAGMA table_info('test_table')",
-            step: { stmt, _ in
-                try String.column(of: stmt, at: 1)
-            }
-        )
+        try await db.query("PRAGMA table_info('test_table')") { stmt, _ in
+            try String.column(of: stmt, at: 1)
+        }
     }
 
     var temporaryFileURL: URL {

@@ -27,7 +27,7 @@ public struct SelectSource<T: TableRef>: Sendable {
         _ block: (T) -> (repeat each Column),
         limit: Int? = nil,
         offset: Int? = nil
-    ) throws -> (String, Binder, (repeat (each Column).ValueType).Type) {
+    ) throws -> (String, Database.ManagedBinder, (repeat (each Column).ValueType).Type) {
         let columnRefs = block(tableRef)
         var columnSqlRefs: [any ColumnRef] = []
         repeat (columnSqlRefs.append(each columnRefs))
@@ -68,8 +68,8 @@ public struct SelectSource<T: TableRef>: Sendable {
         let database = database
         return try database.query(
             select.statement(),
-            binder: select.binder,
-            columns: repeat each columnRefs
+            columns: repeat each columnRefs,
+            binder: select.binder
         )
     }
 
@@ -91,9 +91,8 @@ public struct SelectSource<T: TableRef>: Sendable {
             offset: offset
         )
         let database = database
-        return try database.query(select.statement(), binder: select.binder) { stmt, _ in
-            var index = ManagedIndex()
-            return try T.TableType.read(from: stmt, startingAt: &index)
+        return try database.query(select.statement(), binder: select.binder) { stmt, index, _ in
+            try T.TableType.read(from: stmt, startingAt: &index)
         }
     }
 
@@ -127,7 +126,7 @@ public struct SelectSource<T: TableRef>: Sendable {
         repeat setters.append(
             ColumnValueSetter(
                 columnName: tableRef[keyPath: each columns]._sqlName,
-                valueBinder: (each values).asBinder
+                valueBinder: (each values).managedBinder
             )
         )
 
@@ -168,9 +167,8 @@ public struct SelectSource<T: TableRef>: Sendable {
             distinct: distinct
         )
         let database = database
-        return try database.query(stmt.statement(), binder: stmt.binder) { stmt, _ in
-            var index = ManagedIndex()
-            return try Int64.column(of: stmt, at: &index)
+        return try database.query(stmt.statement(), binder: stmt.binder) { stmt, index, _ in
+            try Int64.column(of: stmt, at: &index)
         }.first ?? 0
     }
 
@@ -183,9 +181,8 @@ public struct SelectSource<T: TableRef>: Sendable {
             condition: condition
         )
         let database = database
-        return try database.query(stmt.statement(), binder: stmt.binder) { stmt, _ in
-            var index = ManagedIndex()
-            return try Int64.column(of: stmt, at: &index)
+        return try database.query(stmt.statement(), binder: stmt.binder) { stmt, index, _ in
+            try Int64.column(of: stmt, at: &index)
         }.first ?? 0
     }
 

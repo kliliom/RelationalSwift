@@ -45,11 +45,11 @@ struct SelectBuilderTests {
 
         #expect(statement == "SELECT x FROM t")
 
-        let rows = try await db.query(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        )
+        let rows = try await db.query(statement) { stmt, index in
+            try binder(stmt, &index)
+        } stepper: { stmt, index, _ in
+            try Int.column(of: stmt, at: &index)
+        }
         #expect(rows == [1, 4, 7])
     }
 
@@ -68,14 +68,11 @@ struct SelectBuilderTests {
 
         #expect(statement == "SELECT x, z FROM t")
 
-        let rows = try await db.query(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
-            step: { stmt, _ in
-                var index = ManagedIndex()
-                return try Int.column(of: stmt, at: &index) + Int.column(of: stmt, at: &index)
-            }
-        )
+        let rows = try await db.query(statement) { stmt, index in
+            try binder(stmt, &index)
+        } stepper: { stmt, index, _ in
+            try Int.column(of: stmt, at: &index) + Int.column(of: stmt, at: &index)
+        }
         #expect(rows == [4, 10, 16])
     }
 
@@ -94,11 +91,11 @@ struct SelectBuilderTests {
 
         #expect(statement == "SELECT x FROM t WHERE x > ?")
 
-        let rows = try await db.query(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        )
+        let rows = try await db.query(statement) { stmt, index in
+            try binder(stmt, &index)
+        } stepper: { stmt, index, _ in
+            try Int.column(of: stmt, at: &index)
+        }
         #expect(rows == [4, 7])
     }
 
@@ -117,11 +114,11 @@ struct SelectBuilderTests {
 
         #expect(statement == "SELECT x FROM t LIMIT ?")
 
-        let rows = try await db.query(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        )
+        let rows = try await db.query(statement) { stmt, index in
+            try binder(stmt, &index)
+        } stepper: { stmt, index, _ in
+            try Int.column(of: stmt, at: &index)
+        }
         #expect(rows == [1, 4])
     }
 
@@ -140,11 +137,11 @@ struct SelectBuilderTests {
 
         #expect(statement == "SELECT x FROM t LIMIT -1 OFFSET ?")
 
-        let rows = try await db.query(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        )
+        let rows = try await db.query(statement) { stmt, index in
+            try binder(stmt, &index)
+        } stepper: { stmt, index, _ in
+            try Int.column(of: stmt, at: &index)
+        }
         #expect(rows == [7])
     }
 
@@ -163,11 +160,11 @@ struct SelectBuilderTests {
 
         #expect(statement == "SELECT x FROM t LIMIT ? OFFSET ?")
 
-        let rows = try await db.query(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) },
-            step: { stmt, _ in var index = ManagedIndex(); return try Int.column(of: stmt, at: &index) }
-        )
+        let rows = try await db.query(statement) { stmt, index in
+            try binder(stmt, &index)
+        } stepper: { stmt, index, _ in
+            try Int.column(of: stmt, at: &index)
+        }
         #expect(rows == [4])
     }
 }

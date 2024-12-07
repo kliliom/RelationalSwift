@@ -42,10 +42,9 @@ struct DeleteBuilderTests {
 
         #expect(statement == "DELETE FROM t")
 
-        try await db.exec(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) }
-        )
+        try await db.exec(statement) { stmt, index in
+            try binder(stmt, &index)
+        }
         try await #expect(db.from(TestEntry.table).select().isEmpty)
     }
 
@@ -61,10 +60,9 @@ struct DeleteBuilderTests {
 
         #expect(statement == "DELETE FROM t WHERE x > ?")
 
-        try await db.exec(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) }
-        )
+        try await db.exec(statement) { stmt, index in
+            try binder(stmt, &index)
+        }
         let rows = try await db.from(TestEntry.table).select()
         #expect(rows == [TestEntry(x: 1, y: 2, z: 3)])
     }
