@@ -28,8 +28,8 @@ struct UpdateBuilder {
     }
 
     /// Binder for the select query.
-    var binder: Binder {
-        var binder: Binder = { _, _ in }
+    var binder: Database.ManagedBinder {
+        var binder: Database.ManagedBinder = { _, _ in }
         for setter in setters {
             let currentBinder = binder
             binder = { stmt, index in

@@ -12,7 +12,7 @@ public class SQLBuilder {
     /// SQL parts.
     public var sql: [String] = []
     /// Parameter binders.
-    public var binders: [Binder] = []
+    public var binders: [Database.ManagedBinder] = []
 
     /// Executes the SQL query.
     /// - Parameter db: Database to execute the statement in.
@@ -20,8 +20,7 @@ public class SQLBuilder {
     func execute(in db: Database) throws {
         let sql = sql.joined(separator: " ")
         let binders = binders
-        try db.exec(sql) { handle in
-            var index = ManagedIndex()
+        try db.exec(sql) { handle, index in
             for binder in binders {
                 try binder(handle, &index)
             }

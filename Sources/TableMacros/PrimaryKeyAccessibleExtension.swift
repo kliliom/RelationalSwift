@@ -44,7 +44,7 @@ struct PrimaryKeyAccessibleExtension {
             .joined(separator: "\n")
 
         return DeclSyntax(stringLiteral: """
-        static let selectAction: (String, @Sendable (KeyType) -> Binder) =
+        static let selectAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) =
             (
                 \"\"\"
                 SELECT * FROM \(table.sqlIdentifier)

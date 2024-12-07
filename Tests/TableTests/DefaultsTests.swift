@@ -47,14 +47,9 @@ struct DefaultsTests {
     func insert() async throws {
         try await db.insert(entry)
 
-        let rows = try await db.query(
-            "SELECT * FROM TestEntry",
-            bind: { _ in },
-            step: { stmt, _ in
-                var index = ManagedIndex()
-                return try TestEntry.read(from: stmt, startingAt: &index)
-            }
-        )
+        let rows = try await db.query("SELECT * FROM TestEntry") { stmt, index, _ in
+            try TestEntry.read(from: stmt, startingAt: &index)
+        }
         #expect(rows.count == 1)
         #expect(rows[0] == entry)
     }

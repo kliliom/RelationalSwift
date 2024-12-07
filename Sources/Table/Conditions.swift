@@ -12,13 +12,13 @@ public struct Condition: Sendable {
     public let sql: String
 
     /// Binder that binds the condition values to the statement.
-    public let binder: Binder
+    public let binder: Database.ManagedBinder
 
     /// Initializes a new condition.
     /// - Parameters:
     ///   - sql: SQL string representation of the condition.
     ///   - binder: Binder that binds the condition values to the statement.
-    init(sql: String, binder: @escaping Binder) {
+    init(sql: String, binder: @escaping Database.ManagedBinder) {
         self.sql = sql
         self.binder = binder
     }
@@ -255,7 +255,7 @@ extension ColumnRef where ValueType: DBEquatable {
         }
     }
 
-    public func `in`(_ query: (String, Binder, ValueType.Type)) -> Condition {
+    public func `in`(_ query: (String, Database.ManagedBinder, ValueType.Type)) -> Condition {
         Condition(sql: "(\(_sqlRef) IN (\(query.0)))") { stmt, index in
             try query.1(stmt, &index)
         }

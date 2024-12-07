@@ -48,10 +48,9 @@ struct UpdateBuilderTests {
 
         #expect(statement == "UPDATE t SET x = ?")
 
-        try await db.exec(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) }
-        )
+        try await db.exec(statement) { stmt, index in
+            try binder(stmt, &index)
+        }
         let rows = try await db.from(TestEntry.table).select()
         #expect(rows.allSatisfy { $0.x == 1 })
     }
@@ -74,10 +73,9 @@ struct UpdateBuilderTests {
 
         #expect(statement == "UPDATE t SET x = ? WHERE x > ?")
 
-        try await db.exec(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) }
-        )
+        try await db.exec(statement) { stmt, index in
+            try binder(stmt, &index)
+        }
         let rows = try await db.from(TestEntry.table).select()
         #expect(rows.allSatisfy { $0.x == 1 })
     }
@@ -104,10 +102,9 @@ struct UpdateBuilderTests {
 
         #expect(statement == "UPDATE t SET x = ? , y = ? WHERE x > ?")
 
-        try await db.exec(
-            statement,
-            bind: { stmt in var index = ManagedIndex(); try binder(stmt, &index) }
-        )
+        try await db.exec(statement) { stmt, index in
+            try binder(stmt, &index)
+        }
         let rows = try await db.from(TestEntry.table).select()
         #expect(rows.allSatisfy { $0.x == 1 })
         #expect(rows.allSatisfy { $0.y == 2 })

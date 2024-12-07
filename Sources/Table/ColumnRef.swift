@@ -18,7 +18,7 @@ public protocol ColumnRef<ValueType>: Sendable {
     var _sqlName: String { get }
 
     /// Binder that binds the values to the statement.
-    var binder: Binder? { get }
+    var binder: Database.ManagedBinder? { get }
 }
 
 /// A typed column reference.
@@ -52,7 +52,7 @@ public struct TypedColumnRef<Value: Bindable>: ColumnRef {
     }
 
     /// Binder that binds the values to the statement.
-    public let binder: Binder? = nil
+    public let binder: Database.ManagedBinder? = nil
 
     public func ifNull<Wrapped>(then value: Wrapped) -> IfNullColumnRef<Wrapped> where ValueType == Wrapped? {
         IfNullColumnRef(named: columnName, of: tableName, value: value)
@@ -94,7 +94,7 @@ public struct IfNullColumnRef<Value: Bindable>: ColumnRef {
     }
 
     /// Binder that binds the values to the statement.
-    public var binder: Binder? {
+    public var binder: Database.ManagedBinder? {
         { [value] stmt, index in
             try ValueType.bind(to: stmt, value: value, at: &index)
         }

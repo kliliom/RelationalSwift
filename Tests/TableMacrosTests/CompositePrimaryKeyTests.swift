@@ -90,7 +90,7 @@ final class CompositePrimaryKeyTests: XCTestCase {
                 }
 
                 extension Contact: RelationalSwift.Insertable {
-                    static let readByRowIDAction: (String, @Sendable (Int64) -> Binder) =
+                    static let readByRowIDAction: (String, @Sendable (Int64) -> Database.ManagedBinder) =
                         (
                             \"""
                             SELECT "id1", "id2"
@@ -104,7 +104,7 @@ final class CompositePrimaryKeyTests: XCTestCase {
                                 }
                             }
                         )
-                    static let insertAction: (String, @Sendable (Contact) -> Binder) =
+                    static let insertAction: (String, @Sendable (Contact) -> Database.ManagedBinder) =
                         (
                             \"""
                             INSERT INTO "Contact" ("id1", "id2")
@@ -132,7 +132,7 @@ final class CompositePrimaryKeyTests: XCTestCase {
                     var _primaryKey: KeyType {
                         (id1, id2)
                     }
-                    static let selectAction: (String, @Sendable (KeyType) -> Binder) =
+                    static let selectAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) =
                         (
                             \"""
                             SELECT * FROM "Contact"
@@ -150,7 +150,7 @@ final class CompositePrimaryKeyTests: XCTestCase {
 
                 extension Contact: RelationalSwift.PrimaryKeyMutable {
                     typealias KeyType = (Int32, String)
-                    static let updateAction: (String, @Sendable (Contact) -> Binder) =
+                    static let updateAction: (String, @Sendable (Contact) -> Database.ManagedBinder) =
                         (
                             \"""
                             UPDATE "Contact" SET 
@@ -167,9 +167,9 @@ final class CompositePrimaryKeyTests: XCTestCase {
                                 }
                             }
                         )
-                    static func partialUpdateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Binder) {
+                    static func partialUpdateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Database.ManagedBinder) {
                         var sets = [String]()
-                        var setBinds = [Binder]()
+                        var setBinds = [Database.ManagedBinder]()
 
                         for column in columns {
                             if false {
@@ -197,7 +197,7 @@ final class CompositePrimaryKeyTests: XCTestCase {
                             }
                         )
                     }
-                    static let upsertAction: (String, @Sendable (Contact) -> Binder)? =
+                    static let upsertAction: (String, @Sendable (Contact) -> Database.ManagedBinder)? =
                         (
                             \"""
                             INSERT INTO "Contact" ("id1", "id2")
@@ -213,7 +213,7 @@ final class CompositePrimaryKeyTests: XCTestCase {
                                 }
                             }
                         )
-                    static let deleteAction: (String, @Sendable (KeyType) -> Binder) =
+                    static let deleteAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) =
                         (
                             \"""
                             DELETE FROM "Contact"

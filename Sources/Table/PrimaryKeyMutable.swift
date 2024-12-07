@@ -13,18 +13,18 @@ public protocol PrimaryKeyMutable<KeyType> {
     var _primaryKey: KeyType { get }
 
     /// Returns the SQL statement and binder provider for updating a row.
-    static var updateAction: (String, @Sendable (Self) -> Binder) { get }
+    static var updateAction: (String, @Sendable (Self) -> Database.ManagedBinder) { get }
 
     /// Returns the SQL statement and binder provider for partially updating a row.
-    static func partialUpdateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Binder)
+    static func partialUpdateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Database.ManagedBinder)
 
     /// Returns the SQL statement and binder provider for updating a row or inserting a new one if it doesn't exist.
     ///
     /// For this operation to be supported, all of the table's primary key columns must be insertable.
-    static var upsertAction: (String, @Sendable (Self) -> Binder)? { get }
+    static var upsertAction: (String, @Sendable (Self) -> Database.ManagedBinder)? { get }
 
     /// Returns the SQL statement and binder provider for deleting a row.
-    static var deleteAction: (String, @Sendable (KeyType) -> Binder) { get }
+    static var deleteAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) { get }
 }
 
 extension Database {
@@ -36,8 +36,7 @@ extension Database {
         try cached {
             try exec(
                 statement,
-                bind: { stmt in
-                    var index = ManagedIndex()
+                binder: { stmt, index in
                     try binder(stmt, &index)
                 }
             )
@@ -58,8 +57,7 @@ extension Database {
         try cached {
             try exec(
                 statement,
-                bind: { stmt in
-                    var index = ManagedIndex()
+                binder: { stmt, index in
                     try binder(stmt, &index)
                 }
             )
@@ -88,8 +86,7 @@ extension Database {
         try cached {
             try exec(
                 statement,
-                bind: { stmt in
-                    var index = ManagedIndex()
+                binder: { stmt, index in
                     try binder(stmt, &index)
                 }
             )
@@ -113,8 +110,7 @@ extension Database {
         try cached {
             try exec(
                 statement,
-                bind: { stmt in
-                    var index = ManagedIndex()
+                binder: { stmt, index in
                     try binder(stmt, &index)
                 }
             )

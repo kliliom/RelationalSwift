@@ -17,7 +17,7 @@ struct InsertableExtension {
             .joined(separator: ", ")
 
         return DeclSyntax(stringLiteral: """
-        static let readByRowIDAction: (String, @Sendable (Int64) -> Binder) =
+        static let readByRowIDAction: (String, @Sendable (Int64) -> Database.ManagedBinder) =
             (
                 \"\"\"
                 SELECT \(fields)
@@ -42,7 +42,7 @@ struct InsertableExtension {
         let valueBinds = columns.map { "try \($0.codeType).bind(to: stmt, value: row.\($0.codeName), at: &index)" }.joined(separator: "\n")
 
         return DeclSyntax(stringLiteral: """
-        static let insertAction: (String, @Sendable (\(table.codeName)) -> Binder) =
+        static let insertAction: (String, @Sendable (\(table.codeName)) -> Database.ManagedBinder) =
             (
                 \"\"\"
                 INSERT INTO \(table.sqlIdentifier) (\(colNames))

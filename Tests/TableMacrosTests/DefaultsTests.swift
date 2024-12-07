@@ -90,7 +90,7 @@ final class DefaultsTests: XCTestCase {
                 }
 
                 extension Contact: RelationalSwift.Insertable {
-                    static let readByRowIDAction: (String, @Sendable (Int64) -> Binder) =
+                    static let readByRowIDAction: (String, @Sendable (Int64) -> Database.ManagedBinder) =
                         (
                             \"""
                             SELECT "id", "name"
@@ -104,7 +104,7 @@ final class DefaultsTests: XCTestCase {
                                 }
                             }
                         )
-                    static let insertAction: (String, @Sendable (Contact) -> Binder) =
+                    static let insertAction: (String, @Sendable (Contact) -> Database.ManagedBinder) =
                         (
                             \"""
                             INSERT INTO "Contact" ("id", "name")

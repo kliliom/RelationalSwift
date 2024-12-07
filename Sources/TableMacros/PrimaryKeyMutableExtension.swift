@@ -43,7 +43,7 @@ struct PrimaryKeyMutableExtension {
             .joined(separator: "\n")
 
         return DeclSyntax(stringLiteral: """
-        static let updateAction: (String, @Sendable (\(table.codeName)) -> Binder) =
+        static let updateAction: (String, @Sendable (\(table.codeName)) -> Database.ManagedBinder) =
             (
                 \"\"\"
                 UPDATE \(table.sqlIdentifier) SET \(sets)
@@ -72,7 +72,7 @@ struct PrimaryKeyMutableExtension {
                 """
                 } else if column == \\.\($0.codeName) {
                     sets.append("\($0.sqlIdentifier.replacingOccurrences(of: "\"", with: "\\\"")) = ?")
-                    setBinds.append(row.\($0.codeName).asBinder)
+                    setBinds.append(row.\($0.codeName).managedBinder)
                 """
             }
             .joined(separator: "\n")
@@ -84,9 +84,9 @@ struct PrimaryKeyMutableExtension {
             .joined(separator: "\n")
 
         return DeclSyntax(stringLiteral: """
-        static func partialUpdateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Binder) {
+        static func partialUpdateAction(_ row: Self, columns: [PartialKeyPath<Self>]) throws -> (String, Database.ManagedBinder) {
             var sets = [String]()
-            var setBinds = [Binder]()
+            var setBinds = [Database.ManagedBinder]()
 
             for column in columns {
                 if false {
@@ -122,7 +122,7 @@ struct PrimaryKeyMutableExtension {
 
         guard pks.allSatisfy({ $0.attribute.insert ?? true }) else {
             return DeclSyntax(stringLiteral: """
-            static let upsertAction: (String, @Sendable (\(table.codeName)) -> Binder)? = nil
+            static let upsertAction: (String, @Sendable (\(table.codeName)) -> Database.ManagedBinder)? = nil
             """)
         }
 
@@ -146,7 +146,7 @@ struct PrimaryKeyMutableExtension {
             .joined(separator: ", ")
 
         return DeclSyntax(stringLiteral: """
-        static let upsertAction: (String, @Sendable (\(table.codeName)) -> Binder)? =
+        static let upsertAction: (String, @Sendable (\(table.codeName)) -> Database.ManagedBinder)? =
             (
                 \"\"\"
                 INSERT INTO \(table.sqlIdentifier) (\(colNames))
@@ -184,7 +184,7 @@ struct PrimaryKeyMutableExtension {
         }
 
         return DeclSyntax(stringLiteral: """
-        static let deleteAction: (String, @Sendable (KeyType) -> Binder) =
+        static let deleteAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) =
             (
                 \"\"\"
                 DELETE FROM \(table.sqlIdentifier)
