@@ -96,10 +96,10 @@ struct ConnectionExtTests {
         let rows = try await db.query(
             "SELECT id, name FROM test_table WHERE id = ?",
             binder: { try Int.bind(to: $0, value: 1, at: &$1) },
-            step: {
+            step: { stmt, _ in
                 var index = ManagedIndex()
-                let id = try Int.column(of: $0, at: &index)
-                let name = try String.column(of: $0, at: &index)
+                let id = try Int.column(of: stmt, at: &index)
+                let name = try String.column(of: stmt, at: &index)
                 return "\(id)-\(name)"
             }
         )
@@ -111,10 +111,10 @@ struct ConnectionExtTests {
         let rows = try await db.query(
             "SELECT id, name FROM test_table WHERE id = ?",
             bind: 1,
-            step: {
+            step: { stmt, _ in
                 var index = ManagedIndex()
-                let id = try Int.column(of: $0, at: &index)
-                let name = try String.column(of: $0, at: &index)
+                let id = try Int.column(of: stmt, at: &index)
+                let name = try String.column(of: stmt, at: &index)
                 return "\(id)-\(name)"
             }
         )
