@@ -6,6 +6,10 @@
 import Foundation
 import SQLite3
 
+@globalActor public actor DatabaseActor: GlobalActor {
+    public static let shared = DatabaseActor()
+}
+
 /// Database handle.
 public struct DatabaseHandle: ~Copyable, Sendable {
     /// Pointer to the database.
@@ -18,10 +22,9 @@ public struct DatabaseHandle: ~Copyable, Sendable {
     }
 
     deinit {
-        let result = sqlite3_close(ptr)
-        if result != SQLITE_OK {
-            let error = InterfaceError(message: String(cString: sqlite3_errmsg(ptr)), code: result)
-            try logAndIgnoreError({ throw error }())
+        if sqlite3_close(ptr) != SQLITE_OK {
+            let message = String(cString: sqlite3_errmsg(ptr))
+            warn("Failed to close database: \(message)")
         }
     }
 }
@@ -60,28 +63,6 @@ public final class Database: Sendable {
 }
 
 extension Database {
-    /// Logger type.
-    public typealias Logger = @MainActor (_ error: Error) -> Void
-
-    /// Logger that uses `print` to log errors.
-    private static let defaultLogger: Logger = { error in
-        print("RelationalSwift error:", error)
-    }
-
-    /// Logger.
-    static var logger: Logger = defaultLogger
-
-    /// Set a logger.
-    /// - Parameter logger: Logger.
-    public static func set(logger: @escaping Logger) {
-        self.logger = logger
-    }
-
-    /// Sets the default logger.
-    public static func setDefaultLogger() {
-        logger = defaultLogger
-    }
-
     /// Opens an in-memory database.
     /// - Returns: The opened database.
     public static func openInMemory() throws -> Database {
@@ -130,10 +111,19 @@ public struct StatementHandle: ~Copyable, Sendable {
 
     deinit {
         if freeOnDeinit {
-            try logAndIgnoreError(check(sqlite3_finalize(stmtPtr), db: dbPtr, is: SQLITE_OK))
+            if sqlite3_finalize(stmtPtr) != SQLITE_OK {
+                let message = String(cString: sqlite3_errmsg(dbPtr))
+                warn("Failed to finalize statement: \(message)")
+            }
         } else {
-            try logAndIgnoreError(check(sqlite3_reset(stmtPtr), db: dbPtr, is: SQLITE_OK))
-            try logAndIgnoreError(check(sqlite3_clear_bindings(stmtPtr), db: dbPtr, is: SQLITE_OK))
+            if sqlite3_reset(stmtPtr) != SQLITE_OK {
+                let message = String(cString: sqlite3_errmsg(dbPtr))
+                warn("Failed to reset statement: \(message)")
+            }
+            if sqlite3_clear_bindings(stmtPtr) != SQLITE_OK {
+                let message = String(cString: sqlite3_errmsg(dbPtr))
+                warn("Failed to clear bindings: \(message)")
+            }
         }
     }
 }
