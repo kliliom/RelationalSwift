@@ -127,7 +127,7 @@ struct DatabaseTests {
     func queryWithDefaultParameters() async throws {
         let db = try await Database.openInMemory()
 
-        _ = try await db.query("SELECT * FROM (VALUES (1), (2), (3))")
+        _ = try await db.query("SELECT * FROM (VALUES (1), (2), (3))") { _, _ in }
     }
 
     @Test("Database.openInMemory() async throws")

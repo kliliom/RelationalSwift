@@ -84,7 +84,7 @@ struct DropTableTests {
 
         let columns: [()] = try await db.query(
             "PRAGMA table_info('test_table')"
-        )
+        ) { _, _ in }
         #expect(columns.count == 0)
     }
 }

@@ -91,7 +91,7 @@ public struct SelectSource<T: TableRef>: Sendable {
             offset: offset
         )
         let database = database
-        return try database.query(select.statement(), binder: select.binder) { stmt in
+        return try database.query(select.statement(), binder: select.binder) { stmt, _ in
             var index = ManagedIndex()
             return try T.TableType.read(from: stmt, startingAt: &index)
         }
@@ -168,7 +168,7 @@ public struct SelectSource<T: TableRef>: Sendable {
             distinct: distinct
         )
         let database = database
-        return try database.query(stmt.statement(), binder: stmt.binder) { stmt in
+        return try database.query(stmt.statement(), binder: stmt.binder) { stmt, _ in
             var index = ManagedIndex()
             return try Int64.column(of: stmt, at: &index)
         }.first ?? 0
@@ -183,7 +183,7 @@ public struct SelectSource<T: TableRef>: Sendable {
             condition: condition
         )
         let database = database
-        return try database.query(stmt.statement(), binder: stmt.binder) { stmt in
+        return try database.query(stmt.statement(), binder: stmt.binder) { stmt, _ in
             var index = ManagedIndex()
             return try Int64.column(of: stmt, at: &index)
         }.first ?? 0
