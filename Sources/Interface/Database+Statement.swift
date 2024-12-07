@@ -75,44 +75,65 @@ extension Database {
     }
 }
 
-public typealias Bind = @Sendable (_ handle: borrowing StatementHandle) throws -> Void
-
-public typealias Step<R> = @Sendable (_ handle: borrowing StatementHandle, _ stop: inout Bool) throws -> R
-
 extension Database {
-    /// Executes a statement, assuming it returns exactly one row.
+    /// A closure for binding parameters to a statement.
+    /// - Parameters:
+    ///   - stmt: The statement to bind values to.
+    public typealias Binder = @Sendable (
+        _ stmt: borrowing StatementHandle
+    ) throws -> Void
+
+    /// A closure for extracting values from a statement.
+    /// - Parameters:
+    ///   - stmt: The statement to extract values from.
+    ///   - stop: A boolean that can be set to true to stop the iteration.
+    public typealias Stepper<R> = @Sendable (
+        _ stmt: borrowing StatementHandle,
+        _ stop: inout Bool
+    ) throws -> R
+
+    /// Executes a statement.
     /// - Parameters:
     ///   - statement: The statement to execute.
-    ///   - bind: A closure that binds values to the statement.
+    ///   - binder: A closure that binds values to the statement.
     public func exec(
         _ statement: String,
-        bind: Bind
+        binder: Binder
     ) throws {
         let stmt = try prepare(statement: statement)
-        try bind(stmt)
+        try binder(stmt)
 
         try check(sqlite3_step(stmt.stmtPtr), db: stmt.dbPtr, is: SQLITE_DONE)
+    }
+
+    /// Executes a statement.
+    /// - Parameter statement: Statement to execute.
+    @inline(__always)
+    public func exec(
+        _ statement: String
+    ) throws {
+        try exec(statement, binder: { _ in })
     }
 
     /// Queries a statement, assuming it returns zero or more rows.
     /// - Parameters:
     ///   - statement: The statement to execute.
-    ///   - bind: A closure that binds values to the statement.
-    ///   - step: A closure that extracts a value from the statement for each row.
+    ///   - binder: A closure that binds values to the statement.
+    ///   - stepper: A closure that extracts a value from the statement for each row.
     /// - Returns: Description
     public func query<R>(
         _ statement: String,
-        bind: Bind,
-        step: Step<R>
+        binder: Binder,
+        stepper: Stepper<R>
     ) throws -> [R] {
         let stmt = try prepare(statement: statement)
-        try bind(stmt)
+        try binder(stmt)
 
         var rows = [R]()
         var code = try check(sqlite3_step(stmt.stmtPtr), db: stmt.dbPtr, in: SQLITE_ROW, SQLITE_DONE)
         var stop = false
         while code == SQLITE_ROW {
-            try rows.append(step(stmt, &stop))
+            try rows.append(stepper(stmt, &stop))
             if stop {
                 code = SQLITE_DONE
             } else {
@@ -121,17 +142,41 @@ extension Database {
         }
         return rows
     }
+
+    /// Queries a statement, assuming it returns zero or more rows.
+    /// - Parameters:
+    ///   - statement: The statement to execute.
+    ///   - stepper: A closure that extracts a value from the statement for each row.
+    /// - Returns: Result of the query.
+    @inline(__always)
+    public func query<R>(
+        _ statement: String,
+        stepper: Stepper<R>
+    ) throws -> [R] {
+        try query(statement, binder: { _ in }, stepper: stepper)
+    }
 }
 
 extension Database {
-    /// Executes a statement.
-    /// - Parameter statement: Statement to execute.
-    @inline(__always)
-    public func exec(
-        _ statement: String
-    ) throws {
-        try exec(statement, bind: { _ in })
-    }
+    /// A closure for binding parameters to a statement with managed index.
+    /// - Parameters:
+    ///   - stmt: The statement to bind values to.
+    ///   - index: A managed index for binding values.
+    public typealias ManagedBinder = @Sendable (
+        _ stmt: borrowing StatementHandle,
+        _ index: inout ManagedIndex
+    ) throws -> Void
+
+    /// A closure for extracting values from a statement with managed index.
+    /// - Parameters:
+    ///   - stmt: The statement to extract values from.
+    ///   - index: A managed index for extracting values.
+    ///   - stop: A boolean that can be set to true to stop the iteration.
+    public typealias ManagedStepper<R> = @Sendable (
+        _ stmt: borrowing StatementHandle,
+        _ index: inout ManagedIndex,
+        _ stop: inout Bool
+    ) throws -> R
 
     /// Executes a statement.
     /// - Parameters:
@@ -140,92 +185,106 @@ extension Database {
     @inline(__always)
     public func exec(
         _ statement: String,
-        binder: Binder
+        binder: ManagedBinder
     ) throws {
-        try exec(statement, bind: { stmt in
+        try exec(statement, binder: { stmt in
             var index = ManagedIndex()
             try binder(stmt, &index)
         })
     }
 
+    /// Queries a statement.
+    /// - Parameters:
+    ///   - statement: Statement to execute.
+    ///   - binder: Value binder.
+    ///   - stepper: Row reader.
+    /// - Returns: Result of the query.
+    @inline(__always)
+    public func query<R>(
+        _ statement: String,
+        binder: ManagedBinder,
+        stepper: ManagedStepper<R>
+    ) throws -> [R] {
+        try query(statement, binder: { stmt in
+            var index = ManagedIndex()
+            try binder(stmt, &index)
+        }, stepper: { stmt, stop in
+            var index = ManagedIndex()
+            return try stepper(stmt, &index, &stop)
+        })
+    }
+
+    /// Queries a statement.
+    /// - Parameters:
+    ///   - statement: Statement to execute.
+    ///   - stepper: Row reader.
+    /// - Returns: Result of the query.
+    @inline(__always)
+    public func query<R>(
+        _ statement: String,
+        stepper: ManagedStepper<R>
+    ) throws -> [R] {
+        try query(statement, binder: { _, _ in }, stepper: stepper)
+    }
+}
+
+extension Database {
     /// Executes a statement.
     /// - Parameters:
     ///   - statement: Statement to execute.
-    ///   - bind: Values to bind.
+    ///   - binding: Values to bind.
     @inline(__always)
     public func exec<each Bind: Bindable>(
         _ statement: String,
-        bind: repeat each Bind
+        binding: repeat each Bind
     ) throws {
         // It should be possible to skip this "packing into an array" trick
         // in the future, but current Swift 6 compiler has an issue with this
-        // try exec(statement, bind: { stmt in
+        // try exec(statement, binder: { stmt in
         //     var index = ManagedIndex()
-        //     try repeat (each bind).bind(to: stmt, at: &index)
+        //     try repeat (each binding).bind(to: stmt, at: &index)
         // })
 
-        var binders = [Binder]()
-        repeat (binders.append((each bind).asBinder))
+        var binders = [ManagedBinder]()
+        repeat (binders.append((each binding).managedBinder))
         let captured = binders
-        try exec(statement, bind: { stmt in
+        try exec(statement, binder: { stmt in
             var index = ManagedIndex()
             try captured.forEach { try $0(stmt, &index) }
         })
     }
-}
-
-extension Database {
-    /// Queries a statement, assuming it returns zero or more rows.
-    /// - Parameters:
-    ///   - statement: The statement to execute.
-    ///   - bind: A closure that binds values to the statement.
-    ///   - step: A closure that extracts a value from the statement for each row.
-    /// - Returns: Result of the query.
-    @inline(__always)
-    public func query<R>(
-        _ statement: String,
-        step: Step<R>
-    ) throws -> [R] {
-        try query(statement, bind: { _ in }, step: step)
-    }
 
     /// Queries a statement.
     /// - Parameters:
     ///   - statement: Statement to execute.
-    ///   - binder: Value binder.
-    ///   - step: Row reader.
-    /// - Returns: Result of the query.
-    @inline(__always)
-    public func query<R>(
-        _ statement: String,
-        binder: Binder,
-        step: Step<R>
-    ) throws -> [R] {
-        try query(statement, bind: { stmt in
-            var index = ManagedIndex()
-            try binder(stmt, &index)
-        }, step: { stmt, stop in
-            try step(stmt, &stop)
-        })
-    }
-
-    /// Queries a statement.
-    /// - Parameters:
-    ///   - statement: Statement to execute.
-    ///   - bind: Values to bind.
-    ///   - step: Row reader.
+    ///   - binding: Values to bind.
+    ///   - stepper: Row reader.
     /// - Returns: Result of the query.
     @inline(__always)
     public func query<R, each Bind: Bindable>(
         _ statement: String,
-        bind: (repeat each Bind),
-        step: Step<R>
+        binding: repeat each Bind,
+        stepper: ManagedStepper<R>
     ) throws -> [R] {
-        try query(statement, bind: { stmt in
+        // It should be possible to skip this "packing into an array" trick
+        // in the future, but current Swift 6 compiler has an issue with this
+        // try query(statement, binder: { stmt in
+        //     var index = ManagedIndex()
+        //     repeat try (each Bind).bind(to: stmt, value: each binding, at: &index)
+        // }, stepper: { stmt, stop in
+        //     var index = ManagedIndex()
+        //     return try stepper(stmt, &index, &stop)
+        // })
+
+        var binders = [ManagedBinder]()
+        repeat (binders.append((each binding).managedBinder))
+        let captured = binders
+        return try query(statement, binder: { stmt in
             var index = ManagedIndex()
-            repeat try (each Bind).bind(to: stmt, value: each bind, at: &index)
-        }, step: { stmt, stop in
-            try step(stmt, &stop)
+            try captured.forEach { try $0(stmt, &index) }
+        }, stepper: { stmt, stop in
+            var index = ManagedIndex()
+            return try stepper(stmt, &index, &stop)
         })
     }
 }
