@@ -12,19 +12,3 @@ class Counter: @unchecked Sendable {
         value += 1
     }
 }
-
-class Reference<T>: @unchecked Sendable {
-    private let semaphore = DispatchSemaphore(value: 1)
-    private var _value: T?
-    var value: T? {
-        get {
-            semaphore.wait()
-            defer { semaphore.signal() }
-            return _value
-        } set {
-            semaphore.wait()
-            defer { semaphore.signal() }
-            _value = newValue
-        }
-    }
-}

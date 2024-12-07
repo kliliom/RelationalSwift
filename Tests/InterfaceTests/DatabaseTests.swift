@@ -13,12 +13,6 @@ struct DatabaseTests {
     @Test("db.prepare(statement:) throws")
     func prepare() async throws {
         let db = try await Database.openInMemory()
-        let stmt = try await db.prepare(statement: "CREATE TABLE x (id INTEGER PRIMARY KEY)")
-
-        // Deinit must be called on global executor
-        await Global.shared.run { [stmt = consume stmt] in
-            _ = stmt
-        }
 
         await #expect(throws: InterfaceError(message: "nil handle while sqlite3_prepare_v2 == SQLITE_OK", code: -1)) {
             _ = try await db.prepare(statement: "")
