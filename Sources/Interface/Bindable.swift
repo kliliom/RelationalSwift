@@ -12,22 +12,40 @@ private let SQLITE_STATIC = unsafeBitCast(0, to: sqlite3_destructor_type.self)
 /// Transient destructor type.
 private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
-/// Bindable protocol.
-///
-/// This protocol is used to bind values to a statement and to extract values from a statement.
+/// A type that can be bound to a statement as a parameter or extracted from a statement as a column.
 public protocol Bindable: Sendable {
-    /// Binds a value to a statement.
+    /// Binds a value to a statement as a parameter.
+    ///
+    /// This method can be used inside ``Database/Binder`` closures.
+    /// The leftmost SQL parameter has an index of 1.
+    ///
+    /// Here is an example of how to bind a value to a statement:
+    ///
+    /// ```swift
+    /// try String.bind(to: stmt, value: "Hello, World!", at: 1)
+    /// ```
+    ///
     /// - Parameters:
     ///   - stmt: The statement to bind the value to.
     ///   - value: The value to bind.
-    ///   - index: The index of the parameter to bind the value to. First index is 1.
+    ///   - index: The index of the parameter to bind the value to.
     @DatabaseActor
     static func bind(to stmt: borrowing StatementHandle, value: Self, at index: Int32) throws
 
-    /// Extracts a value from a statement.
+    /// Extracts a column value from a statement.
+    ///
+    /// This method can be used inside ``Database/Stepper`` closures.
+    /// The leftmost SQL column has an index of 0.
+    ///
+    /// Here is an example of how to extract a value from a statement:
+    ///
+    /// ```swift
+    /// let value = try String.column(of: stmt, at: 0)
+    /// ```
+    ///
     /// - Parameters:
     ///   - stmt: The statement to extract the value from.
-    ///   - index: The index of the column to extract the value from. First index is 0.
+    ///   - index: The index of the column to extract the value from.
     /// - Returns: The extracted value.
     @DatabaseActor
     static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self
@@ -41,7 +59,16 @@ public protocol Bindable: Sendable {
 }
 
 extension Bindable {
-    /// Binds a value to a statement.
+    /// Binds a value to a statement as a parameter.
+    ///
+    /// This method can be used inside ``Database/ManagedBinder`` closures.
+    ///
+    /// Here is an example of how to bind a value to a statement:
+    ///
+    /// ```swift
+    /// try String.bind(to: stmt, value: "Hello, World!", at: &index)
+    /// ```
+    ///
     /// - Parameters:
     ///   - stmt: The statement to bind the value to.
     ///   - value: The value to bind.
@@ -53,7 +80,16 @@ extension Bindable {
         try bind(to: stmt, value: value, at: index.value)
     }
 
-    /// Extracts a value from a statement.
+    /// Extracts a column value from a statement.
+    ///
+    /// This method can be used inside ``Database/ManagedStepper`` closures.
+    ///
+    /// Here is an example of how to extract a value from a statement:
+    ///
+    /// ```swift
+    /// let value = try String.column(of: stmt, at: &index)
+    /// ```
+    ///
     /// - Parameters:
     ///   - stmt: The statement to extract the value from.
     ///   - index: Managed index of the column to extract the value from.
@@ -67,27 +103,57 @@ extension Bindable {
 }
 
 extension Bindable {
-    /// Binds a value to a statement.
+    /// Binds a value to a statement as a parameter.
+    ///
+    /// This method can be used inside ``Database/Binder`` closures.
+    /// The leftmost SQL parameter has an index of 1.
+    ///
+    /// Here is an example of how to bind a value to a statement:
+    ///
+    /// ```swift
+    /// try "Hello, World!".bind(to: stmt, at: 1)
+    /// ```
+    ///
     /// - Parameters:
     ///   - stmt: The statement to bind the value to.
-    ///   - index: The index of the parameter to bind the value to. First index is 1.
+    ///   - index: The index of the parameter to bind the value to.
     @DatabaseActor
     @inline(__always)
     public func bind(to stmt: borrowing StatementHandle, at index: Int32) throws {
         try Self.bind(to: stmt, value: self, at: index)
     }
 
-    /// Extracts a value from a statement.
+    /// Extracts a column value from a statement.
+    ///
+    /// This method can be used inside ``Database/Stepper`` closures.
+    /// The leftmost SQL column has an index of 0.
+    ///
+    /// Here is an example of how to extract a value from a statement:
+    ///
+    /// ```swift
+    /// var value = ""
+    /// try value.column(of: stmt, at: 0)
+    /// ```
+    ///
     /// - Parameters:
     ///   - stmt: The statement to extract the value from.
-    ///   - index: The index of the column to extract the value from. First index is 0.
+    ///   - index: The index of the column to extract the value from.
     @DatabaseActor
     @inline(__always)
     public mutating func column(of stmt: borrowing StatementHandle, at index: Int32) throws {
         self = try Self.column(of: stmt, at: index)
     }
 
-    /// Binds a value to a statement.
+    /// Binds a value to a statement as a parameter.
+    ///
+    /// This method can be used inside ``Database/ManagedBinder`` closures.
+    ///
+    /// Here is an example of how to bind a value to a statement:
+    ///
+    /// ```swift
+    /// try "Hello, World!".bind(to: stmt, at: &index)
+    /// ```
+    ///
     /// - Parameters:
     ///   - stmt: The statement to bind the value to.
     ///   - index: Managed index of the parameter to bind the value to.
@@ -98,7 +164,17 @@ extension Bindable {
         try Self.bind(to: stmt, value: self, at: index.value)
     }
 
-    /// Extracts a value from a statement.
+    /// Extracts a column value from a statement.
+    ///
+    /// This method can be used inside ``Database/ManagedStepper`` closures.
+    ///
+    /// Here is an example of how to extract a value from a statement:
+    ///
+    /// ```swift
+    /// var value = ""
+    /// try value.column(of: stmt, at: &index)
+    /// ```
+    ///
     /// - Parameters:
     ///   - stmt: The statement to extract the value from.
     ///   - index: Managed index of the column to extract the value from.
@@ -111,6 +187,7 @@ extension Bindable {
 }
 
 extension Bindable {
+    /// Returns a managed binder for this value.
     public var managedBinder: Database.ManagedBinder {
         { stmt, index in
             try Self.bind(to: stmt, value: self, at: &index)

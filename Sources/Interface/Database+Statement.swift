@@ -6,20 +6,22 @@
 import Foundation
 import SQLite3
 
-/// Statement handle.
+/// Wrapper type for a handle to an SQLite statement.
 public struct StatementHandle: ~Copyable, Sendable {
-    /// Database pointer.
+    /// Handle to the database.
     let dbPtr: OpaquePointer
-    /// Statement pointer.
+    /// Handle to the statement.
     let stmtPtr: OpaquePointer
-    /// Whether to free the statement on deinit.
+    /// Flag to free the statement on deinit.
+    ///
+    /// If the statement is cached, it should not be freed on deinit.
     let freeOnDeinit: Bool
 
     /// Initializes a statement handle.
     /// - Parameters:
-    ///   - dbPtr: Database pointer.
-    ///   - stmtPtr: Statement pointer.
-    ///   - freeOnDeinit: Whether to free the statement on deinit.
+    ///   - dbPtr: Handle to the database.
+    ///   - stmtPtr: Handle to the statement.
+    ///   - freeOnDeinit: Flag to free the statement on deinit.
     init(dbPtr: OpaquePointer, stmtPtr: OpaquePointer, freeOnDeinit: Bool) {
         self.dbPtr = dbPtr
         self.stmtPtr = stmtPtr
@@ -46,10 +48,10 @@ public struct StatementHandle: ~Copyable, Sendable {
 }
 
 extension Database {
-    /// Prepares a statement.
-    /// - Parameter statement: The statement to prepare.
-    /// - Returns: The prepared statement.
-    public func prepare(statement: String) throws -> StatementHandle {
+    /// Prepares a statement for execution.
+    /// - Parameter statement: SQL statement to prepare.
+    /// - Returns: A handle to the prepared statement.
+    func prepare(statement: String) throws -> StatementHandle {
         let useCache = options.contains(.persistent)
 
         if useCache, let stmtPtr = statementCache[statement] {
@@ -78,23 +80,38 @@ extension Database {
 extension Database {
     /// A closure for binding parameters to a statement.
     /// - Parameters:
-    ///   - stmt: The statement to bind values to.
+    ///   - stmt: The statement handle to bind values to.
     public typealias Binder = @DatabaseActor @Sendable (
         _ stmt: borrowing StatementHandle
     ) throws -> Void
 
     /// A closure for extracting values from a statement.
     /// - Parameters:
-    ///   - stmt: The statement to extract values from.
-    ///   - stop: A boolean that can be set to true to stop the iteration.
+    ///   - stmt: The statement handle to extract values from.
+    ///   - stop: A boolean that can be set to true to stop reading rows.
     public typealias Stepper<R> = @DatabaseActor @Sendable (
         _ stmt: borrowing StatementHandle,
         _ stop: inout Bool
     ) throws -> R
 
     /// Executes a statement.
+    ///
+    /// `exec` methods can be used for statements that do not return any rows.
+    ///
+    /// You are responsible for binding values in the `binder` closure to the correct parameter index.
+    /// The leftmost parameter has an index of 1.
+    ///
+    /// Here is an example of executing a statement with parameters:
+    ///
+    /// ```swift
+    /// try await db.exec("INSERT INTO users (name, age) VALUES (?, ?)") { stmt in
+    ///     try "Foo".bind(to: stmt, at: 1)
+    ///     try 42.bind(to: stmt, at: 2)
+    /// }
+    /// ````
+    ///
     /// - Parameters:
-    ///   - statement: The statement to execute.
+    ///   - statement: SQL statement to execute.
     ///   - binder: A closure that binds values to the statement.
     public func exec(
         _ statement: String,
@@ -106,8 +123,19 @@ extension Database {
         try check(sqlite3_step(stmt.stmtPtr), db: stmt.dbPtr, is: SQLITE_DONE)
     }
 
-    /// Executes a statement.
-    /// - Parameter statement: Statement to execute.
+    /// Executes a statement without parameters.
+    ///
+    /// `exec` methods can be used for statements that do not return any rows.
+    ///
+    /// Here is an example of executing a statement without parameters:
+    ///
+    /// ```swift
+    /// try await db.exec("DELETE FROM users")
+    /// ```
+    ///
+    /// > This is a convenience method for ``exec(_:binder:)-1e07f`` with an empty binder.
+    ///
+    /// - Parameter statement: SQL statement to execute.
     @inline(__always)
     public func exec(
         _ statement: String
@@ -115,12 +143,39 @@ extension Database {
         try exec(statement, binder: { _ in })
     }
 
-    /// Queries a statement, assuming it returns zero or more rows.
+    /// Queries a statement.
+    ///
+    /// `query` methods can be used for statements that can return rows.
+    ///
+    /// You are responsible for binding values in the `binder` closure to the correct parameter index.
+    /// The leftmost parameter has an index of 1.
+    ///
+    /// For every row in the result set, the `stepper` closure is called.
+    /// You are responsible for extracting the values from the statement from the correct column index.
+    /// The leftmost column has an index of 0.
+    /// The `stepper` closure has a second parameter, `stop`, which can be set to `true` to stop the iteration.
+    ///
+    /// Here is an example of querying a statement with parameters:
+    ///
+    /// ```swift
+    /// let namesAndAges = try await db.query("SELECT name, age FROM users WHERE age > ?") { stmt in
+    ///     try 20.bind(to: stmt, at: 1)
+    /// } stepper: { stmt, _ in
+    ///     let name = try String.column(of: stmt, at: 0)
+    ///     let age = try Int.column(of: stmt, at: 1)
+    ///     return (name, age)
+    /// }
+    ///
+    /// for (name, age) in namesAndAges {
+    ///     print("\(name) is \(age) years old.")
+    /// }
+    /// ```
+    ///
     /// - Parameters:
-    ///   - statement: The statement to execute.
+    ///   - statement: SQL statement to execute.
     ///   - binder: A closure that binds values to the statement.
-    ///   - stepper: A closure that extracts a value from the statement for each row.
-    /// - Returns: Description
+    ///   - stepper: A closure that extracts a values from the statement for each row.
+    /// - Returns: Result rows of the query.
     public func query<R>(
         _ statement: String,
         binder: Binder,
@@ -143,9 +198,33 @@ extension Database {
         return rows
     }
 
-    /// Queries a statement, assuming it returns zero or more rows.
+    /// Queries a statement without parameters.
+    ///
+    /// `query` methods can be used for statements that can return rows.
+    ///
+    /// For every row in the result set, the `stepper` closure is called.
+    /// You are responsible for extracting the values from the statement from the correct column index.
+    /// The leftmost column has an index of 0.
+    /// The `stepper` closure has a second parameter, `stop`, which can be set to `true` to stop the iteration.
+    ///
+    /// Here is an example of querying a statement without parameters:
+    ///
+    /// ```swift
+    /// let namesAndAges = try await db.query("SELECT name, age FROM users") { stmt, _ in
+    ///     let name = try String.column(of: stmt, at: 0)
+    ///     let age = try Int.column(of: stmt, at: 1)
+    ///     return (name, age)
+    /// }
+    ///
+    /// for (name, age) in namesAndAges {
+    ///     print("\(name) is \(age) years old.")
+    /// }
+    /// ```
+    ///
+    /// > This is a convenience method for ``query(_:binder:stepper:)-6qvlh`` with an empty binder.
+    ///
     /// - Parameters:
-    ///   - statement: The statement to execute.
+    ///   - statement: SQL statement to execute.
     ///   - stepper: A closure that extracts a value from the statement for each row.
     /// - Returns: Result of the query.
     @inline(__always)
@@ -160,7 +239,7 @@ extension Database {
 extension Database {
     /// A closure for binding parameters to a statement with managed index.
     /// - Parameters:
-    ///   - stmt: The statement to bind values to.
+    ///   - stmt: The statement handle to bind values to.
     ///   - index: A managed index for binding values.
     public typealias ManagedBinder = @DatabaseActor @Sendable (
         _ stmt: borrowing StatementHandle,
@@ -169,7 +248,7 @@ extension Database {
 
     /// A closure for extracting values from a statement with managed index.
     /// - Parameters:
-    ///   - stmt: The statement to extract values from.
+    ///   - stmt: The statement handle to extract values from.
     ///   - index: A managed index for extracting values.
     ///   - stop: A boolean that can be set to true to stop the iteration.
     public typealias ManagedStepper<R> = @DatabaseActor @Sendable (
@@ -179,9 +258,24 @@ extension Database {
     ) throws -> R
 
     /// Executes a statement.
+    ///
+    /// `exec` methods can be used for statements that do not return any rows.
+    ///
+    /// The `binder` closure has a second parameter, `index`, which is a managed index for binding values.
+    /// You are responsible for binding values in the `binder` closure in the correct order using the `index`.
+    ///
+    /// Here is an example of executing a statement with parameters:
+    ///
+    /// ```swift
+    /// try await db.exec("INSERT INTO users (name, age) VALUES (?, ?)") { stmt, index in
+    ///     try "Foo".bind(to: stmt, at: &index)
+    ///     try 42.bind(to: stmt, at: &index)
+    /// }
+    /// ````
+    ///
     /// - Parameters:
-    ///   - statement: Statement to execute.
-    ///   - binder: Value binder.
+    ///   - statement: SQL statement to execute.
+    ///   - binder: A closure that binds values to the statement.
     @inline(__always)
     public func exec(
         _ statement: String,
@@ -194,11 +288,38 @@ extension Database {
     }
 
     /// Queries a statement.
+    ///
+    /// `query` methods can be used for statements that can return rows.
+    ///
+    /// The `binder` closure has a second parameter, `index`, which is a managed index for binding values.
+    /// You are responsible for binding values in the `binder` closure in the correct order using the `index`.
+    ///
+    /// For every row in the result set, the `stepper` closure is called.
+    /// The `stepper` closure has a second parameter, `index`, which is a managed index for extracting values.
+    /// You are responsible for extracting the values from the statement in the correct order using the `index`.
+    /// The `stepper` closure has a third parameter, `stop`, which can be set to `true` to stop the iteration.
+    ///
+    /// Here is an example of querying a statement with parameters:
+    ///
+    /// ```swift
+    /// let namesAndAges = try await db.query("SELECT name, age FROM users WHERE age > ?") { stmt, index in
+    ///     try 20.bind(to: stmt, at: &index)
+    /// } stepper: { stmt, index, _ in
+    ///     let name = try String.column(of: stmt, at: &index)
+    ///     let age = try Int.column(of: stmt, at: &index)
+    ///     return (name, age)
+    /// }
+    ///
+    /// for (name, age) in namesAndAges {
+    ///     print("\(name) is \(age) years old.")
+    /// }
+    /// ```
+    ///
     /// - Parameters:
-    ///   - statement: Statement to execute.
-    ///   - binder: Value binder.
-    ///   - stepper: Row reader.
-    /// - Returns: Result of the query.
+    ///   - statement: SQL statement to execute.
+    ///   - binder: A closure that binds values to the statement.
+    ///   - stepper: A closure that extracts a values from the statement for each row.
+    /// - Returns: Result rows of the query.
     @inline(__always)
     public func query<R>(
         _ statement: String,
@@ -214,11 +335,35 @@ extension Database {
         })
     }
 
-    /// Queries a statement.
+    /// Queries a statement without parameters.
+    ///
+    /// `query` methods can be used for statements that can return rows.
+    ///
+    /// For every row in the result set, the `stepper` closure is called.
+    /// The `stepper` closure has a second parameter, `index`, which is a managed index for extracting values.
+    /// You are responsible for extracting the values from the statement in the correct order using the `index`.
+    /// The `stepper` closure has a third parameter, `stop`, which can be set to `true` to stop the iteration.
+    ///
+    /// Here is an example of querying a statement with parameters:
+    ///
+    /// ```swift
+    /// let namesAndAges = try await db.query("SELECT name, age FROM users") { stmt, index, _ in
+    ///     let name = try String.column(of: stmt, at: &index)
+    ///     let age = try Int.column(of: stmt, at: &index)
+    ///     return (name, age)
+    /// }
+    ///
+    /// for (name, age) in namesAndAges {
+    ///     print("\(name) is \(age) years old.")
+    /// }
+    /// ```
+    ///
+    /// > This is a convenience method for ``query(_:binder:stepper:)-4476r`` with an empty binder.
+    ///
     /// - Parameters:
-    ///   - statement: Statement to execute.
-    ///   - stepper: Row reader.
-    /// - Returns: Result of the query.
+    ///   - statement: SQL statement to execute.
+    ///   - stepper: A closure that extracts a values from the statement for each row.
+    /// - Returns: Result rows of the query.
     @inline(__always)
     public func query<R>(
         _ statement: String,
@@ -230,8 +375,20 @@ extension Database {
 
 extension Database {
     /// Executes a statement.
+    ///
+    /// `exec` methods can be used for statements that do not return any rows.
+    ///
+    /// You are responsible for binding values in the `binding` parameters in the correct order.
+    ///
+    /// Here is an example of executing a statement with parameters:
+    ///
+    /// ```swift
+    /// try await db.exec("INSERT INTO users (name, age) VALUES (?, ?)",
+    ///                   binding: "Foo", 42)
+    /// ````
+    ///
     /// - Parameters:
-    ///   - statement: Statement to execute.
+    ///   - statement: SQL statement to execute.
     ///   - firstValue: First value to bind.
     ///   - otherValues: Other values to bind.
     @inline(__always)
@@ -258,12 +415,39 @@ extension Database {
     }
 
     /// Queries a statement.
+    ///
+    /// `query` methods can be used for statements that can return rows.
+    ///
+    /// You are responsible for binding values in the `binding` parameters in the correct order.
+    ///
+    /// For every row in the result set, the `stepper` closure is called.
+    /// The `stepper` closure has a second parameter, `index`, which is a managed index for extracting values.
+    /// You are responsible for extracting the values from the statement in the correct order using the `index`.
+    /// The `stepper` closure has a third parameter, `stop`, which can be set to `true` to stop the iteration.
+    ///
+    /// Here is an example of querying a statement with parameters:
+    ///
+    /// ```swift
+    /// let namesAndAges = try await db.query(
+    ///     "SELECT name, age FROM users WHERE age > ?",
+    ///     binding: 20
+    /// ) { stmt, index, _ in
+    ///     let name = try String.column(of: stmt, at: &index)
+    ///     let age = try Int.column(of: stmt, at: &index)
+    ///     return (name, age)
+    /// }
+    ///
+    /// for (name, age) in namesAndAges {
+    ///     print("\(name) is \(age) years old.")
+    /// }
+    /// ```
+    ///
     /// - Parameters:
-    ///   - statement: Statement to execute.
+    ///   - statement: SQL statement to execute.
     ///   - firstValue: First value to bind.
     ///   - otherValues: Other values to bind.
     ///   - stepper: Row reader.
-    /// - Returns: Result of the query.
+    /// - Returns: Result rows of the query.
     @inline(__always)
     public func query<R, each Values: Bindable>(
         _ statement: String,
