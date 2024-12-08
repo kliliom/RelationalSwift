@@ -19,5 +19,6 @@ public protocol Table<TableRefType>: Sendable {
     ///   - stmt: Statement handle.
     ///   - index: Starting index to read from.
     /// - Returns: Row.
+    @DatabaseActor
     static func read(from stmt: borrowing StatementHandle, startingAt index: inout ManagedIndex) throws -> Self
 }

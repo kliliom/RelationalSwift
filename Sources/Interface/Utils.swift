@@ -14,8 +14,8 @@ extension OpaquePointer: @unchecked @retroactive Sendable {}
 ///   - db: The database to check.
 ///   - result: The expected result.
 /// - Throws: A `InterfaceError` if the result does not match the expected result.
+@DatabaseActor
 func check(_ block: @autoclosure () -> Int32, db: OpaquePointer? = nil, is result: Int32) throws {
-    DatabaseActor.assertIsolated()
     let code = block()
     guard result != code else { return }
     if let db {
@@ -32,8 +32,8 @@ func check(_ block: @autoclosure () -> Int32, db: OpaquePointer? = nil, is resul
 ///   - results: The expected results.
 /// - Throws: A `InterfaceError` if the result does not match any of the expected results.
 /// - Returns: The result of the block.
+@DatabaseActor
 func check(_ block: @autoclosure () -> Int32, db: OpaquePointer? = nil, in results: Int32...) throws -> Int32 {
-    DatabaseActor.assertIsolated()
     let code = block()
     guard !results.contains(code) else { return code }
     if let db {

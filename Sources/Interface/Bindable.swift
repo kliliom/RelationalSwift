@@ -21,6 +21,7 @@ public protocol Bindable: Sendable {
     ///   - stmt: The statement to bind the value to.
     ///   - value: The value to bind.
     ///   - index: The index of the parameter to bind the value to. First index is 1.
+    @DatabaseActor
     static func bind(to stmt: borrowing StatementHandle, value: Self, at index: Int32) throws
 
     /// Extracts a value from a statement.
@@ -28,6 +29,7 @@ public protocol Bindable: Sendable {
     ///   - stmt: The statement to extract the value from.
     ///   - index: The index of the column to extract the value from. First index is 0.
     /// - Returns: The extracted value.
+    @DatabaseActor
     static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self
 
     /// Converts the value to an SQL literal.
@@ -44,6 +46,7 @@ extension Bindable {
     ///   - stmt: The statement to bind the value to.
     ///   - value: The value to bind.
     ///   - index: Managed index of the parameter to bind the value to.
+    @DatabaseActor
     @inline(__always)
     public static func bind(to stmt: borrowing StatementHandle, value: Self, at index: inout ManagedIndex) throws {
         index.value += 1
@@ -55,6 +58,7 @@ extension Bindable {
     ///   - stmt: The statement to extract the value from.
     ///   - index: Managed index of the column to extract the value from.
     /// - Returns: The extracted value.
+    @DatabaseActor
     @inline(__always)
     public static func column(of stmt: borrowing StatementHandle, at index: inout ManagedIndex) throws -> Self {
         defer { index.value += 1 }
@@ -67,6 +71,7 @@ extension Bindable {
     /// - Parameters:
     ///   - stmt: The statement to bind the value to.
     ///   - index: The index of the parameter to bind the value to. First index is 1.
+    @DatabaseActor
     @inline(__always)
     public func bind(to stmt: borrowing StatementHandle, at index: Int32) throws {
         try Self.bind(to: stmt, value: self, at: index)
@@ -76,6 +81,7 @@ extension Bindable {
     /// - Parameters:
     ///   - stmt: The statement to extract the value from.
     ///   - index: The index of the column to extract the value from. First index is 0.
+    @DatabaseActor
     @inline(__always)
     public mutating func column(of stmt: borrowing StatementHandle, at index: Int32) throws {
         self = try Self.column(of: stmt, at: index)
@@ -85,6 +91,7 @@ extension Bindable {
     /// - Parameters:
     ///   - stmt: The statement to bind the value to.
     ///   - index: Managed index of the parameter to bind the value to.
+    @DatabaseActor
     @inline(__always)
     public func bind(to stmt: borrowing StatementHandle, at index: inout ManagedIndex) throws {
         index.value += 1
@@ -95,6 +102,7 @@ extension Bindable {
     /// - Parameters:
     ///   - stmt: The statement to extract the value from.
     ///   - index: Managed index of the column to extract the value from.
+    @DatabaseActor
     @inline(__always)
     public mutating func column(of stmt: borrowing StatementHandle, at index: inout ManagedIndex) throws {
         defer { index.value += 1 }
@@ -305,6 +313,7 @@ extension Date: Bindable {
 }
 
 extension Bindable where Self: Codable {
+    @DatabaseActor
     public static func bind(to stmt: borrowing StatementHandle, value: Self, at index: Int32) throws {
         let encoder = JSONEncoder()
         let data = try encoder.encode(value)
@@ -313,6 +322,7 @@ extension Bindable where Self: Codable {
         }
     }
 
+    @DatabaseActor
     public static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self {
         if let blob = sqlite3_column_blob(stmt.stmtPtr, index) {
             let count = sqlite3_column_bytes(stmt.stmtPtr, index)
@@ -335,10 +345,12 @@ extension Bindable where Self: Codable {
 }
 
 extension Bindable where Self: RawRepresentable, RawValue: Bindable {
+    @DatabaseActor
     public static func bind(to stmt: borrowing StatementHandle, value: Self, at index: Int32) throws {
         try RawValue.bind(to: stmt, value: value.rawValue, at: index)
     }
 
+    @DatabaseActor
     public static func column(of stmt: borrowing StatementHandle, at index: Int32) throws -> Self {
         let rawValue = try RawValue.column(of: stmt, at: index)
         if let value = Self(rawValue: rawValue) {

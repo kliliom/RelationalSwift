@@ -79,7 +79,7 @@ extension Database {
     /// A closure for binding parameters to a statement.
     /// - Parameters:
     ///   - stmt: The statement to bind values to.
-    public typealias Binder = @Sendable (
+    public typealias Binder = @DatabaseActor @Sendable (
         _ stmt: borrowing StatementHandle
     ) throws -> Void
 
@@ -87,7 +87,7 @@ extension Database {
     /// - Parameters:
     ///   - stmt: The statement to extract values from.
     ///   - stop: A boolean that can be set to true to stop the iteration.
-    public typealias Stepper<R> = @Sendable (
+    public typealias Stepper<R> = @DatabaseActor @Sendable (
         _ stmt: borrowing StatementHandle,
         _ stop: inout Bool
     ) throws -> R
@@ -162,7 +162,7 @@ extension Database {
     /// - Parameters:
     ///   - stmt: The statement to bind values to.
     ///   - index: A managed index for binding values.
-    public typealias ManagedBinder = @Sendable (
+    public typealias ManagedBinder = @DatabaseActor @Sendable (
         _ stmt: borrowing StatementHandle,
         _ index: inout ManagedIndex
     ) throws -> Void
@@ -172,7 +172,7 @@ extension Database {
     ///   - stmt: The statement to extract values from.
     ///   - index: A managed index for extracting values.
     ///   - stop: A boolean that can be set to true to stop the iteration.
-    public typealias ManagedStepper<R> = @Sendable (
+    public typealias ManagedStepper<R> = @DatabaseActor @Sendable (
         _ stmt: borrowing StatementHandle,
         _ index: inout ManagedIndex,
         _ stop: inout Bool
