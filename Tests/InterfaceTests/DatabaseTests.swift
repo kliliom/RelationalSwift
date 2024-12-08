@@ -33,13 +33,21 @@ struct DatabaseTests {
     func lastInsertedRowID() async throws {
         let db = try await Database.openInMemory()
 
-        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
+        try #expect(await db.lastInsertedRowID {
+            try db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
+        } == nil)
 
-        await db.clearLastInsertedRowID()
-        #expect(await db.lastInsertedRowID() == nil)
+        try #expect(await db.lastInsertedRowID {
+            try db.exec("INSERT INTO x (id) VALUES (1)")
+        } == 1)
 
-        try await db.exec("INSERT INTO x (id) VALUES (1)")
-        #expect(await db.lastInsertedRowID() != nil)
+        try #expect(await db.lastInsertedRowID {
+            try db.exec("INSERT INTO x (id) VALUES (2) ON CONFLICT(id) DO NOTHING")
+        } == 2)
+
+        try #expect(await db.lastInsertedRowID {
+            try db.exec("INSERT INTO x (id) VALUES (2) ON CONFLICT(id) DO NOTHING")
+        } == nil)
     }
 
     @Test("Transaction", arguments: [

@@ -40,19 +40,20 @@ extension Database {
     ///
     /// - Parameter row: Row to insert.
     public func insert<T: Table & Insertable>(_ row: inout T) throws {
-        clearLastInsertedRowID()
         let (statement, binderProvider) = T.insertAction
         let binder = binderProvider(row)
-        try cached {
-            try exec(
-                statement,
-                binder: { stmt, index in
-                    try binder(stmt, &index)
-                }
-            )
+        let rowID = try cached {
+            try lastInsertedRowID {
+                try exec(
+                    statement,
+                    binder: { stmt, index in
+                        try binder(stmt, &index)
+                    }
+                )
+            }
         }
 
-        if let rowID = lastInsertedRowID() {
+        if let rowID {
             let (statement, binderProvider) = T.readByRowIDAction
             let binder = binderProvider(rowID)
             let rows = try cached {

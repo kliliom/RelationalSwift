@@ -90,24 +90,19 @@ extension Database {
 }
 
 extension Database {
-    /// Cleared value of the last inserted row ID.
-    var clearedLastInsertedRowID: Int64 {
-        -1
-    }
-
-    /// Clear last inserted row ID.
-    public func clearLastInsertedRowID() {
-        sqlite3_set_last_insert_rowid(db.ptr, clearedLastInsertedRowID)
-    }
-
-    /// Last inserted row ID.
-    /// - Returns: Last inserted row ID or nil if the same as cleared value.
-    public func lastInsertedRowID() -> Int64? {
+    /// Captures the last inserted row ID.
+    /// - Parameter block: Block of code.
+    /// - Returns: Last inserted row ID.
+    public func lastInsertedRowID(_ block: @DatabaseActor () throws -> Void) throws -> Int64? {
+        sqlite3_set_last_insert_rowid(db.ptr, 0)
+        try block()
         let id = sqlite3_last_insert_rowid(db.ptr)
-        guard id != clearedLastInsertedRowID else { return nil }
+        guard id != 0 else { return nil }
         return id
     }
+}
 
+extension Database {
     /// Executes a transaction.
     /// - Parameters:
     ///   - kind: Transaction kind. Default is `.deferred`.
@@ -137,11 +132,13 @@ extension Database {
             throw error
         }
     }
+}
 
+extension Database {
     /// Executes a block of code with statement caching enabled.
     /// - Parameter block: Block of code.
     /// - Returns: Result of the block.
-    public func cached<T>(_ block: @DatabaseActor () throws -> T) throws -> T {
+    public func cached<T>(_ block: @DatabaseActor () throws -> T) rethrows -> T {
         options.insert(.persistent)
         defer { options.remove(.persistent) }
         return try block()
