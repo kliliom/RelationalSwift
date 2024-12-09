@@ -21,7 +21,7 @@ jobs:
             .build/artifacts
             .build/checkouts
             .build/repositories
-          key: ${{ runner.os }}-swift-${{ hashFiles('**/Package.resolved') }}
+          key: ${{ runner.os }}-swift-${{ hashFiles('Package.resolved') }}
 
       - name: Get Swift Version
         run: swift --version
