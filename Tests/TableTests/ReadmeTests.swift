@@ -29,15 +29,15 @@ struct ReadmeTests {
         var joe = User(id: 0, name: "Joe", age: 21, address: nil)
         try await db.insert(&joe)
 
-        var rows = try await db.from(User.table).where { $0.id == joe.id }.select()
+        var rows = try await db.from(User.self).where { $0.id == joe.id }.select()
         #expect(rows == [joe])
 
         // Query entries:
         // Get full user entries
-        let users = try await db.from(User.table).where { $0.age > 20 }.select()
+        let users = try await db.from(User.self).where { $0.age > 20 }.select()
 
         // Get select fields only
-        let names = try await db.from(User.table).where { $0.age > 20 }.select { $0.name }
+        let names = try await db.from(User.self).where { $0.age > 20 }.select { $0.name }
 
         #expect(users == [joe])
         #expect(names == ["Joe"])
@@ -46,13 +46,13 @@ struct ReadmeTests {
         joe.age = 22
         try await db.update(joe)
 
-        rows = try await db.from(User.table).where { $0.id == joe.id }.select()
+        rows = try await db.from(User.self).where { $0.id == joe.id }.select()
         #expect(rows == [joe])
 
         // Delete entry:
         try await db.delete(joe)
 
-        rows = try await db.from(User.table).where { $0.id == joe.id }.select()
+        rows = try await db.from(User.self).where { $0.id == joe.id }.select()
         #expect(rows == [])
     }
 }

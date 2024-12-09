@@ -62,10 +62,10 @@ Query entries:
 
 ```swift
 // Get full user entries
-let users = try await db.from(User.table).where { $0.age > 20 }.select()
+let users = try await db.from(User.self).where { $0.age > 20 }.select()
 
 // Get select fields only
-let names = try await db.from(User.table).where { $0.age > 20 }.select { $0.name }
+let names = try await db.from(User.self).where { $0.age > 20 }.select { $0.name }
 ```
 
 Update entry:
