@@ -23,14 +23,14 @@ struct DatabaseStatementPrepareTests {
 
     @Test("Prepare statement fails with invalid SQL")
     func prepareFailsWithInvalidSQL() async throws {
-        await #expect(throws: InterfaceError(message: "near \"pickle\": syntax error", code: 1)) {
+        await #expect(throws: InterfaceError.error(message: "near \"pickle\": syntax error")) {
             _ = try await db.prepare(statement: "pickle")
         }
     }
 
     @Test("Prepare statement fails with nil handle")
     func prepareFailsWithNilHandle() async throws {
-        await #expect(throws: InterfaceError(message: "nil handle while sqlite3_prepare_v2 == SQLITE_OK", code: -1)) {
+        await #expect(throws: InterfaceError.emptyStatement) {
             _ = try await db.prepare(statement: "")
         }
     }

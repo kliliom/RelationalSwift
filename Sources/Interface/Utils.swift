@@ -19,9 +19,9 @@ func check(_ block: @autoclosure () -> Int32, db: OpaquePointer? = nil, is resul
     let code = block()
     guard result != code else { return }
     if let db {
-        throw InterfaceError(message: String(cString: sqlite3_errmsg(db)), code: code)
+        throw InterfaceError(sqlite: code, message: String(cString: sqlite3_errmsg(db)))
     } else {
-        throw InterfaceError(message: String(cString: sqlite3_errstr(code)), code: code)
+        throw InterfaceError(sqlite: code, message: String(cString: sqlite3_errstr(code)))
     }
 }
 
@@ -37,8 +37,8 @@ func check(_ block: @autoclosure () -> Int32, db: OpaquePointer? = nil, in resul
     let code = block()
     guard !results.contains(code) else { return code }
     if let db {
-        throw InterfaceError(message: String(cString: sqlite3_errmsg(db)), code: code)
+        throw InterfaceError(sqlite: code, message: String(cString: sqlite3_errmsg(db)))
     } else {
-        throw InterfaceError(message: String(cString: sqlite3_errstr(code)), code: code)
+        throw InterfaceError(sqlite: code, message: String(cString: sqlite3_errstr(code)))
     }
 }

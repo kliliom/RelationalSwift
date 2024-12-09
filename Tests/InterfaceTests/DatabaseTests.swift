@@ -24,7 +24,7 @@ struct DatabaseTests {
         }
         _ = try await Database.open(url: url)
 
-        await #expect(throws: InterfaceError(message: "cannot open non-file url", code: -1)) {
+        await #expect(throws: InterfaceError.notAFileURL) {
             _ = try await Database.open(url: URL(string: "https://www.google.com")!)
         }
     }

@@ -66,7 +66,7 @@ extension Database {
         }
         try check(sqlite3_prepare_v3(db.ptr, statement, -1, flags, &ptr, nil), db: db.ptr, is: SQLITE_OK)
         guard let ptr else {
-            throw InterfaceError(message: "nil handle while sqlite3_prepare_v2 == SQLITE_OK", code: -1)
+            throw InterfaceError.emptyStatement
         }
 
         if useCache {

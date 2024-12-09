@@ -104,7 +104,7 @@ extension Database {
     /// - Returns: A new ``Database`` instance pointing to the database at the given URL.
     public static func open(url: URL) throws -> Database {
         guard url.isFileURL else {
-            throw InterfaceError(message: "cannot open non-file url", code: -1)
+            throw InterfaceError.notAFileURL
         }
         var ptr: OpaquePointer?
         let path: String = if #available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *) {

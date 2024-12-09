@@ -313,7 +313,7 @@ extension String: Bindable {
         if let cString = sqlite3_column_text(stmt.stmtPtr, index) {
             return String(cString: cString)
         } else {
-            throw InterfaceError(message: "sqlite3_column_text returned nil", code: -1)
+            throw InterfaceError.unexpectedNullValue
         }
     }
 
@@ -337,7 +337,7 @@ extension UUID: Bindable {
             let mem = blob.bindMemory(to: uuid_t.self, capacity: 1)
             return UUID(uuid: mem.pointee)
         } else {
-            throw InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)
+            throw InterfaceError.unexpectedNullValue
         }
     }
 
@@ -360,8 +360,10 @@ extension Data: Bindable {
         if let blob = sqlite3_column_blob(stmt.stmtPtr, index) {
             let count = sqlite3_column_bytes(stmt.stmtPtr, index)
             return Data(bytes: blob, count: Int(count))
+        } else if sqlite3_column_type(stmt.stmtPtr, index) == SQLITE_NULL {
+            throw InterfaceError.unexpectedNullValue
         } else {
-            throw InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)
+            return Data()
         }
     }
 
@@ -407,7 +409,7 @@ extension Bindable where Self: Codable {
             let decoder = JSONDecoder()
             return try decoder.decode(Self.self, from: data)
         } else {
-            throw InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)
+            throw InterfaceError.unexpectedNullValue
         }
     }
 
@@ -433,9 +435,9 @@ extension Bindable where Self: RawRepresentable, RawValue: Bindable {
         if let value = Self(rawValue: rawValue) {
             return value
         } else {
-            throw InterfaceError(
-                message: "failed to map value \"\(rawValue)\" to \(String(describing: Self.self))",
-                code: -1
+            throw InterfaceError.typeMappingFailed(
+                value: String(describing: rawValue),
+                type: String(describing: Self.self)
             )
         }
     }

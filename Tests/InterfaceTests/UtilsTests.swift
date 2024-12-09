@@ -15,13 +15,13 @@ struct UtilsTests {
         let db = try await Database.openInMemory()
         let ptr = await db.db.ptr
 
-        await #expect(throws: InterfaceError(message: "not an error", code: 0)) {
+        await #expect(throws: InterfaceError.otherSQLiteError(code: 0, message: "not an error")) {
             try await { @DatabaseActor in
                 try check(0, is: 1)
             }()
         }
 
-        await #expect(throws: InterfaceError(message: "not an error", code: 0)) {
+        await #expect(throws: InterfaceError.otherSQLiteError(code: 0, message: "not an error")) {
             try await { @DatabaseActor in
                 try check(0, db: ptr, is: 1)
             }()
@@ -33,13 +33,13 @@ struct UtilsTests {
         let db = try await Database.openInMemory()
         let ptr = await db.db.ptr
 
-        await #expect(throws: InterfaceError(message: "not an error", code: 0)) {
+        await #expect(throws: InterfaceError.otherSQLiteError(code: 0, message: "not an error")) {
             try await { @DatabaseActor in
                 try check(0, in: 1, 2, 3)
             }()
         }
 
-        await #expect(throws: InterfaceError(message: "not an error", code: 0)) {
+        await #expect(throws: InterfaceError.otherSQLiteError(code: 0, message: "not an error")) {
             try await { @DatabaseActor in
                 try check(0, db: ptr, in: 1, 2, 3)
             }()

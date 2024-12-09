@@ -153,7 +153,21 @@ struct BindableTests {
         try await run(sqlType: sqlType, value: Optional<String>.none)
         #expect(try value.asSQLLiteral() == "'what''s up?'")
 
-        await #expect(throws: InterfaceError(message: "sqlite3_column_text returned nil", code: -1)) {
+        await #expect(throws: InterfaceError.unexpectedNullValue) {
+            try await run(sqlType: sqlType, writeValue: Optional<String>.none, readValue: "")
+        }
+    }
+
+    @Test("Type: String (empty)")
+    func typeSupportEmptyString() async throws {
+        let value = ""
+        let sqlType = type(of: value).detaultSQLStorageType
+        try await run(sqlType: sqlType, value: String(value))
+        try await run(sqlType: sqlType, value: Optional<String>.some(value))
+        try await run(sqlType: sqlType, value: Optional<String>.none)
+        #expect(try value.asSQLLiteral() == "''")
+
+        await #expect(throws: InterfaceError.unexpectedNullValue) {
             try await run(sqlType: sqlType, writeValue: Optional<String>.none, readValue: "")
         }
     }
@@ -167,7 +181,7 @@ struct BindableTests {
         try await run(sqlType: sqlType, value: Optional<UUID>.none)
         #expect(try value.asSQLLiteral() == "X'70e5bf82563d416db0a1a06b626040c8'")
 
-        await #expect(throws: InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)) {
+        await #expect(throws: InterfaceError.unexpectedNullValue) {
             try await run(sqlType: sqlType, writeValue: Optional<UUID>.none, readValue: UUID())
         }
     }
@@ -181,7 +195,21 @@ struct BindableTests {
         try await run(sqlType: sqlType, value: Optional<Data>.none)
         #expect(try value.asSQLLiteral() == "X'd4f54d1089c2d8e04c30d64fb2cf5050e574aeee55e1bb0ef3c8df76aa8bdaa6e31d31f23edc0936fc26be9d98c97229b01c3d31021c4e02b63da89d01245af8ef583153dbe4d0421834f694'")
 
-        await #expect(throws: InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)) {
+        await #expect(throws: InterfaceError.unexpectedNullValue) {
+            try await run(sqlType: sqlType, writeValue: Optional<Data>.none, readValue: Data())
+        }
+    }
+
+    @Test("Type: Data (empty)")
+    func typeSupportEmptyData() async throws {
+        let value = Data()
+        let sqlType = type(of: value).detaultSQLStorageType
+        try await run(sqlType: sqlType, value: value)
+        try await run(sqlType: sqlType, value: Optional<Data>.some(value))
+        try await run(sqlType: sqlType, value: Optional<Data>.none)
+        #expect(try value.asSQLLiteral() == "X''")
+
+        await #expect(throws: InterfaceError.unexpectedNullValue) {
             try await run(sqlType: sqlType, writeValue: Optional<Data>.none, readValue: Data())
         }
     }
@@ -205,7 +233,7 @@ struct BindableTests {
         try await run(sqlType: sqlType, value: Optional<CGRect>.none)
         #expect(try value.asSQLLiteral() == "X\'5b5b31302c32305d2c5b33302c34305d5d\'")
 
-        await #expect(throws: InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)) {
+        await #expect(throws: InterfaceError.unexpectedNullValue) {
             try await run(sqlType: sqlType, writeValue: Optional<CGRect>.none, readValue: CGRect())
         }
     }
@@ -219,7 +247,7 @@ struct BindableTests {
         try await run(sqlType: sqlType, value: Optional<[Int]>.none)
         #expect(try value.asSQLLiteral() == "X\'5b312c322c335d\'")
 
-        await #expect(throws: InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)) {
+        await #expect(throws: InterfaceError.unexpectedNullValue) {
             try await run(sqlType: sqlType, writeValue: Optional<[Int]>.none, readValue: [Int]())
         }
     }
@@ -241,7 +269,7 @@ struct BindableTests {
         ]
         #expect(try validLiterals.contains(value.asSQLLiteral()))
 
-        await #expect(throws: InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)) {
+        await #expect(throws: InterfaceError.unexpectedNullValue) {
             try await run(sqlType: sqlType, writeValue: Optional<[String: Int]>.none, readValue: [Int]())
         }
     }
@@ -259,7 +287,7 @@ struct BindableTests {
         try await run(sqlType: sqlType, value: Optional<[CGPoint]>.none)
         #expect(try value.asSQLLiteral() == "X\'5b5b31302c32305d2c5b33302c34305d2c5b35302c36305d5d\'")
 
-        await #expect(throws: InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)) {
+        await #expect(throws: InterfaceError.unexpectedNullValue) {
             try await run(sqlType: sqlType, writeValue: Optional<[CGPoint]>.none, readValue: [Int]())
         }
     }
@@ -281,7 +309,7 @@ struct BindableTests {
         ]
         #expect(try validLiterals.contains(value.asSQLLiteral()))
 
-        await #expect(throws: InterfaceError(message: "sqlite3_column_blob returned nil", code: -1)) {
+        await #expect(throws: InterfaceError.unexpectedNullValue) {
             try await run(sqlType: sqlType, writeValue: Optional<[String: CGPoint]>.none, readValue: [Int]())
         }
     }
@@ -295,7 +323,7 @@ struct BindableTests {
         try await run(sqlType: sqlType, value: Optional<MyRawRepresentable>.none)
         #expect(try value.asSQLLiteral() == "'first'")
 
-        await #expect(throws: InterfaceError(message: "failed to map value \"other\" to MyRawRepresentable", code: -1)) {
+        await #expect(throws: InterfaceError.typeMappingFailed(value: "other", type: "MyRawRepresentable")) {
             try await run(sqlType: sqlType, writeValue: "other", readValue: MyRawRepresentable.first)
         }
     }
