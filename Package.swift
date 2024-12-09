@@ -1,11 +1,12 @@
 // swift-tools-version: 6.0
 
+import Foundation
 import PackageDescription
 import CompilerPluginSupport
 
 // Use swift format when developing this library, but don't
 // add additional dependency for the users of this library.
-let useSwiftFormat: Bool = false
+let useSwiftFormat: Bool = ProcessInfo.processInfo.environment["GITHUB_JOB"] != nil
 
 var package = Package(
     name: "RelationalSwift",
