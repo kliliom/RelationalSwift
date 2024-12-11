@@ -14,6 +14,9 @@ public protocol Table<TableRefType>: Sendable {
     /// Returns a table reference.
     static var table: TableRefType { get }
 
+    /// Table name.
+    static var name: String { get }
+
     /// Reads a row from the database.
     /// - Parameters:
     ///   - stmt: Statement handle.

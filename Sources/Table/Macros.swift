@@ -12,8 +12,8 @@
     extension,
     conformances: Table, PrimaryKeyAccessible, PrimaryKeyMutable, Insertable,
     names:
-    named(read(from:startingAt:)),
-    named(_primaryKey), named(selectAction),
+    named(name), named(read(from:startingAt:)),
+    named(_primaryKey), named(selectAction), named(selectRowIDAction),
     named(insertAction), named(readByRowIDAction), named(createTableAction),
     named(KeyType), named(updateAction), named(partialUpdateAction), named(upsertAction), named(deleteAction)
 )

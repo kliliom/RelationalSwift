@@ -81,6 +81,9 @@ final class CompositePrimaryKeyTests: XCTestCase {
                 }
 
                 extension Contact: RelationalSwift.Table {
+                    static var name: String {
+                        "Contact"
+                    }
                     static func read(from stmt: borrowing StatementHandle, startingAt index: inout ManagedIndex) throws -> Contact {
                         Contact(
                             id1: try Int32.column(of: stmt, at: &index),
@@ -136,6 +139,20 @@ final class CompositePrimaryKeyTests: XCTestCase {
                         (
                             \"""
                             SELECT * FROM "Contact"
+                            WHERE "id1" == ? AND "id2" == ?
+                            \""",
+                            { key in
+                                { stmt, index in
+                                    // WHERE
+                                    try Int32.bind(to: stmt, value: key.0, at: &index)
+                                    try String.bind(to: stmt, value: key.1, at: &index)
+                                }
+                            }
+                        )
+                    static let selectRowIDAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) =
+                        (
+                            \"""
+                            SELECT rowid FROM "Contact"
                             WHERE "id1" == ? AND "id2" == ?
                             \""",
                             { key in
