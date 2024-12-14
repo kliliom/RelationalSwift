@@ -8,7 +8,7 @@ public func breakOnWarning() {}
 
 private nonisolated(unsafe) var breakOnWarningInfoShown: Bool = false
 
-func warn(_ message: String) {
+package func warn(_ message: String) {
     print("[RelationalSwift] WARNING: \(message)")
     if !breakOnWarningInfoShown {
         breakOnWarningInfoShown = true

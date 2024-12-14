@@ -101,6 +101,9 @@ final class NonDefaultsTests: XCTestCase {
                 }
 
                 extension Contact: RelationalSwift.Table {
+                    static var name: String {
+                        "papaya"
+                    }
                     static func read(from stmt: borrowing StatementHandle, startingAt index: inout ManagedIndex) throws -> Contact {
                         Contact(
                             id: try Int32.column(of: stmt, at: &index),
@@ -167,6 +170,19 @@ final class NonDefaultsTests: XCTestCase {
                         (
                             \"""
                             SELECT * FROM "papaya"
+                            WHERE "apple" == ?
+                            \""",
+                            { key in
+                                { stmt, index in
+                                    // WHERE
+                                    try Int32.bind(to: stmt, value: key, at: &index)
+                                }
+                            }
+                        )
+                    static let selectRowIDAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) =
+                        (
+                            \"""
+                            SELECT rowid FROM "papaya"
                             WHERE "apple" == ?
                             \""",
                             { key in

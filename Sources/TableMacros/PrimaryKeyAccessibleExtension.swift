@@ -60,10 +60,41 @@ struct PrimaryKeyAccessibleExtension {
         """)
     }
 
+    private var readRowIDVarDecl: DeclSyntax {
+        let pks = table.columns.filter(\.attribute.primaryKey)
+        precondition(!pks.isEmpty)
+
+        let wheres = pks
+            .map { "\($0.sqlIdentifier) == ?" }
+            .joined(separator: " AND ")
+        let whereBinds = pks
+            .enumerated()
+            .map { ($0.element.codeType, pks.count > 1 ? "key.\($0.offset)" : "key") }
+            .map { "try \($0.0).bind(to: stmt, value: \($0.1), at: &index)" }
+            .joined(separator: "\n")
+
+        return DeclSyntax(stringLiteral: """
+        static let selectRowIDAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) =
+            (
+                \"\"\"
+                SELECT rowid FROM \(table.sqlIdentifier)
+                WHERE \(wheres)
+                \"\"\",
+                { key in
+                    { stmt, index in
+                        // WHERE
+                        \(whereBinds)
+                    }
+                }
+            )
+        """)
+    }
+
     func delcarations() -> [DeclSyntax] {
         [
             primaryKeyVarDecl,
             readVarDecl,
+            readRowIDVarDecl,
         ]
     }
 

@@ -11,6 +11,22 @@ import SwiftSyntaxMacros
 struct TableExtension {
     let table: TableDecl
 
+    private var nameDecl: DeclSyntax {
+        let nameSyntax = SimpleStringLiteralExprSyntax(
+            openingQuote: .stringQuoteToken(),
+            segments: [
+                StringSegmentSyntax(content: .stringSegment(table.attribute.name ?? table.codeName)),
+            ],
+            closingQuote: .stringQuoteToken()
+        )
+
+        return DeclSyntax(stringLiteral: """
+        static var name: String {
+            \(nameSyntax)
+        }
+        """)
+    }
+
     private var readFuncDecl: DeclSyntax {
         let fields = table.columns
             .map { "\($0.codeName): try \($0.codeType).column(of: stmt, at: &index)" }
@@ -27,6 +43,7 @@ struct TableExtension {
 
     private func delcarations() -> [DeclSyntax] {
         [
+            nameDecl,
             readFuncDecl,
         ]
     }

@@ -36,6 +36,9 @@ struct DatabaseOptions: OptionSet {
 
     /// Cache and reuse the prepared statements.
     static let persistent = DatabaseOptions(rawValue: 1 << 0)
+
+    /// Transaction is active.
+    static let transactionActive = DatabaseOptions(rawValue: 2 << 0)
 }
 
 /// Database actor.
@@ -49,6 +52,9 @@ public final class Database: Sendable {
 
     /// Statement cache.
     var statementCache: [String: OpaquePointer] = [:]
+
+    /// Registered services.
+    var services: [ObjectIdentifier: Service] = [:]
 
     /// Initializes a database connection.
     /// - Parameter db: Database handle.
@@ -169,6 +175,15 @@ extension Database {
         kind: TransactionKind = .deferred,
         _ block: @DatabaseActor () throws -> T
     ) throws -> T {
+        if options.contains(.transactionActive) {
+            warn("Nested transactions are not supported, executing in the current transaction.")
+            return try block()
+        }
+
+        options.insert(.transactionActive)
+        signalTransactionWillBegin()
+        defer { options.remove(.transactionActive) }
+
         let beginStatement = switch kind {
         case .deferred:
             "BEGIN DEFERRED TRANSACTION"
@@ -183,9 +198,16 @@ extension Database {
         do {
             let result = try block()
             try exec("COMMIT TRANSACTION")
+            signalTransactionDidCommit()
             return result
         } catch {
-            try exec("ROLLBACK TRANSACTION")
+            signalTransactionDidRollback()
+            do {
+                try exec("ROLLBACK TRANSACTION")
+            } catch {
+                warn("Failed to rollback transaction: \(error)")
+                fatalError("Aborting due to failed transaction rollback.")
+            }
             throw error
         }
     }
@@ -233,5 +255,19 @@ extension Database {
         options.insert(.persistent)
         defer { options.remove(.persistent) }
         return try block()
+    }
+}
+
+extension Database {
+    /// Gives direct access to the database handle.
+    ///
+    /// This method is useful when you need to access the database handle directly using the SQLite C API.
+    ///
+    /// - Warning: It is highly discouraged to store or use the database handle outside of the `block` closure.
+    ///
+    /// - Parameter block: Block in which the database handle is safely accessible.
+    /// - Returns: Result of the `block` closure.
+    public func directAccess<T>(_ block: @DatabaseActor (_ ptr: OpaquePointer) throws -> T) rethrows -> T {
+        try block(db.ptr)
     }
 }

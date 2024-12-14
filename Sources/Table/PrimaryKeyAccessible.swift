@@ -14,6 +14,9 @@ public protocol PrimaryKeyAccessible<KeyType> {
 
     /// Returns the SQL statement and binder provider for reading a row.
     static var selectAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) { get }
+
+    /// Returns the SQL statement and binder provider for reading the rowid of a row.
+    static var selectRowIDAction: (String, @Sendable (KeyType) -> Database.ManagedBinder) { get }
 }
 
 extension Database {
@@ -31,6 +34,26 @@ extension Database {
                 },
                 stepper: { stmt, index, _ in
                     try T.read(from: stmt, startingAt: &index)
+                }
+            )
+        }
+        return rows.first
+    }
+
+    /// Reads the rowid of a row from the database.
+    /// - Parameter row: Row to read the rowid of.
+    /// - Returns: Rowid.
+    public func selectRowID<T: Table & PrimaryKeyAccessible>(of row: T) throws -> Int64? {
+        let (statement, binderProvider) = T.selectRowIDAction
+        let binder = binderProvider(row._primaryKey)
+        let rows = try cached {
+            try query(
+                statement,
+                binder: { stmt, index in
+                    try binder(stmt, &index)
+                },
+                stepper: { stmt, index, _ in
+                    try Int64.column(of: stmt, at: &index)
                 }
             )
         }

@@ -1,5 +1,5 @@
 {
-  "originHash" : "0c4eae314ed2d6781eb1db2baa640c4ff67b18fc8382aadb4a5b2544b6b09c6f",
+  "originHash" : "dd6fd1d632be89ea242d96d8155566914835cc215be082577d16a4793dc55e2f",
   "pins" : [
     {
       "identity" : "swift-docc-plugin",

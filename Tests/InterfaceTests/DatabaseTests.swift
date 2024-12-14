@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import SQLite3
 import Testing
 
 @testable import Interface
@@ -124,5 +125,32 @@ struct DatabaseTests {
 
         // We can use exec here because we expect no rows to be returned.
         try await db.exec("SELECT id FROM x")
+    }
+
+    @Test("Direct Access")
+    func directAccess() async throws {
+        let db = try await Database.openInMemory()
+
+        try await db.exec("CREATE TABLE x (id INTEGER PRIMARY KEY)")
+
+        try await db.directAccess { ptr in
+            var stmt: OpaquePointer?
+            var result = sqlite3_prepare_v2(ptr, "INSERT INTO x (id) VALUES (?)", -1, &stmt, nil)
+            try #require(result == SQLITE_OK)
+
+            defer { sqlite3_finalize(stmt) }
+
+            result = sqlite3_bind_int(stmt, 1, 1)
+            try #require(result == SQLITE_OK)
+
+            result = sqlite3_step(stmt)
+            try #require(result == SQLITE_DONE)
+        }
+
+        let rows = try await db.query("SELECT id FROM x") { stmt, _ in
+            try Int.column(of: stmt, at: 0)
+        }
+
+        #expect(rows == [1])
     }
 }

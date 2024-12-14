@@ -81,6 +81,9 @@ final class DefaultsTests: XCTestCase {
                 }
 
                 extension Contact: RelationalSwift.Table {
+                    static var name: String {
+                        "Contact"
+                    }
                     static func read(from stmt: borrowing StatementHandle, startingAt index: inout ManagedIndex) throws -> Contact {
                         Contact(
                             id: try Int32.column(of: stmt, at: &index),
