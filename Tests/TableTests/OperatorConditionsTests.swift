@@ -34,7 +34,8 @@ struct OperatorConditionsTests {
     @Test("OR operator")
     func orOperator() async throws {
         let rows = try await db.from(TestEntry.table)
-            .where { $0.x == 1 || $0.x == 3 }
+            // NOTE: without `t -> Condition in` the compiler cannot type-check in time.
+            .where { t -> Condition in t.x == 1 || t.x == 3 }
             .select { $0.x }
         #expect(rows == [1, 3])
     }

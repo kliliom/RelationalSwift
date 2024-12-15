@@ -29,6 +29,24 @@ struct SelectSourceTests {
         try await db.insert(TestEntry(a: 3, b: 6))
     }
 
+    @Test("Multiple where clauses")
+    func multipleWhereClauses() async throws {
+        try await db.insert(TestEntry(a: 1, b: 2))
+
+        var rows: [Int]
+        rows = try await db.from(TestEntry.self)
+            .where { $0.a == 1 }
+            .where { $0.a == 2 }
+            .select { $0.a }
+        #expect(rows.count == 0)
+
+        rows = try await db.from(TestEntry.self)
+            .where { $0.a == 1 }
+            .where { $0.b == 2 }
+            .select { $0.a }
+        #expect(rows.count == 1)
+    }
+
     @Test("Select column from type")
     func selectColumnFromType() async throws {
         var rows: [Int]

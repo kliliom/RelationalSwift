@@ -5,7 +5,7 @@
 
 import Foundation
 
-/// A builder for a select query.
+/// Builder for an SQL SELECT statement.
 struct SelectBuilder {
     /// Source table.
     let from: String

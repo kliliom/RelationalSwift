@@ -104,6 +104,9 @@ struct DatabaseObservationTests {
         try await db.delete(TestEntry(id: 2, name: "Baz"))
         collector.cancel()
 
+        // Wait for cancellation to take effect
+        _ = await collector.result
+
         // Test cleanup in service
         _ = try await Task { @DatabaseActor [db = db!] in
             let service = db.getService(ObservationService.self)
@@ -125,6 +128,10 @@ struct DatabaseObservationTests {
     mutating func tableObservationCanBeCancelledBeforeFirstEvent() async throws {
         let collector = try await collectTable()
         collector.cancel()
+
+        // Wait for cancellation to take effect
+        _ = await collector.result
+
         try await db.insert(TestEntry(id: 0, name: "Foo"))
         db = nil
         try #require(await collector.value == [
@@ -252,6 +259,9 @@ struct DatabaseObservationTests {
         try await db.update(TestEntry(id: 1, name: "Bar"))
         collector.cancel()
 
+        // Wait for cancellation to take effect
+        _ = await collector.result
+
         // Test cleanup in service
         _ = try await Task { @DatabaseActor [db = db!] in
             let service = db.getService(ObservationService.self)
@@ -273,6 +283,10 @@ struct DatabaseObservationTests {
 
         let collector = try await collectRow(entry)
         collector.cancel()
+
+        // Wait for cancellation to take effect
+        _ = await collector.result
+
         try await db.update(TestEntry(id: 1, name: "Bar"))
         db = nil
         try #require(await collector.value == [

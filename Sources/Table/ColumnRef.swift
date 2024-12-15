@@ -12,27 +12,41 @@ public protocol ColumnRef<ValueType>: Sendable {
     associatedtype ValueType: Bindable
 
     /// SQL reference to the column.
+    ///
+    /// This is a fully qualified reference to the column, including the table name.
+    /// The value must be escaped properly to avoid conflicts with reserved keywords.
     var _sqlRef: String { get }
 
     /// SQL reference to the column.
+    ///
+    /// This is a reference to the column without the table name.
+    /// The value must be escaped properly to avoid conflicts with reserved keywords.
     var _sqlName: String { get }
 
-    /// Binder that binds the values to the statement.
+    /// Binder that binds values to the statement if needed.
     var binder: Database.ManagedBinder? { get }
 }
 
 /// A typed column reference.
+///
+/// This is a reference to a column in a table with a specific type.
 public struct TypedColumnRef<Value: Bindable>: ColumnRef {
-    /// Type of the value that the column holds.
     public typealias ValueType = Value
 
     /// Name of the table.
+    ///
+    /// Escaped properly to avoid conflicts with reserved keywords.
     public let tableName: String
 
     /// Name of the column.
+    ///
+    /// Escaped properly to avoid conflicts with reserved keywords.
     public let columnName: String
 
     /// Initializes a new column reference.
+    ///
+    /// `columnName` and `tableName` must be escaped properly to avoid conflicts with reserved keywords.
+    ///
     /// - Parameters:
     ///   - columnName: Name of the column.
     ///   - tableName: Name of the table.
@@ -41,61 +55,57 @@ public struct TypedColumnRef<Value: Bindable>: ColumnRef {
         self.columnName = columnName
     }
 
-    /// SQL reference to the column.
     public var _sqlRef: String {
         "\(tableName).\(columnName)"
     }
 
-    /// SQL name of the column.
     public var _sqlName: String {
         columnName
     }
 
-    /// Binder that binds the values to the statement.
     public let binder: Database.ManagedBinder? = nil
 
+    /// Returns a new column reference with a fallback value in case of null.
+    /// - Parameter value: Fallback value in case of null.
+    /// - Returns: A new column reference.
     public func ifNull<Wrapped>(then value: Wrapped) -> IfNullColumnRef<Wrapped> where ValueType == Wrapped? {
-        IfNullColumnRef(named: columnName, of: tableName, value: value)
+        IfNullColumnRef(self, value: value)
     }
 }
 
+/// A column reference with a fallback value in case of null.
+///
+/// This is a reference to a column in a table with a specific type and a fallback value in case of null.
 public struct IfNullColumnRef<Value: Bindable>: ColumnRef {
     /// Type of the value that the column holds.
     public typealias ValueType = Value
 
-    /// Name of the table.
-    public let tableName: String
-
-    /// Name of the column.
-    public let columnName: String
+    /// Column reference to a column that can be null.
+    public let ref: any ColumnRef<Value?>
 
     /// Fallback value in case of null.
     public let value: Value
 
-    /// Initializes a new column reference.
+    /// Initializes a new column reference with a fallback value in case of null.
     /// - Parameters:
-    ///   - columnName: Name of the column.
-    ///   - tableName: Name of the table.
+    ///   - ref: Column reference to a column that can be null.
     ///   - value: Fallback value in case of null.
-    public init(named columnName: String, of tableName: String, value: Value) {
-        self.tableName = tableName
-        self.columnName = columnName
+    public init(_ ref: any ColumnRef<Value?>, value: Value) {
+        self.ref = ref
         self.value = value
     }
 
-    /// SQL reference to the column.
     public var _sqlRef: String {
-        "IFNULL(\(tableName).\(columnName), ?)"
+        "IFNULL(\(ref._sqlRef), ?)"
     }
 
-    /// SQL name of the column.
     public var _sqlName: String {
-        "IFNULL(\(columnName), ?)"
+        "IFNULL(\(ref._sqlName), ?)"
     }
 
-    /// Binder that binds the values to the statement.
     public var binder: Database.ManagedBinder? {
         { [value] stmt, index in
+            try ref.binder?(stmt, &index)
             try ValueType.bind(to: stmt, value: value, at: &index)
         }
     }

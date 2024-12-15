@@ -5,7 +5,7 @@
 
 import Foundation
 
-/// A builder for a count statement.
+/// Builder for an SQL COUNT statement.
 struct CountBuilder {
     /// Source table.
     let from: String

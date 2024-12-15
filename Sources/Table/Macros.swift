@@ -5,7 +5,8 @@
 
 @attached(
     member,
-    names: named(table), named(table(as:)),
+    names:
+    named(table), named(table(as:)),
     arbitrary
 )
 @attached(

@@ -5,7 +5,7 @@
 
 import Foundation
 
-/// A builder for a delete statement.
+/// Builder for an SQL DELETE statement.
 struct DeleteBuilder {
     /// Source table.
     let from: String

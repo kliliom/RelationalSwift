@@ -41,7 +41,7 @@ struct DatabaseOptions: OptionSet {
     static let transactionActive = DatabaseOptions(rawValue: 2 << 0)
 }
 
-/// Database actor.
+/// An interface for interacting with an SQLite database.
 @DatabaseActor
 public final class Database: Sendable {
     /// Handle to the database.
