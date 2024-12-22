@@ -35,3 +35,13 @@ Database provides safe access to SQLite databases. All operations on a database 
 ### Last Inserted Row
 
 - ``Database/lastInsertedRowID(_:)``
+
+### Direct Database Access
+
+- ``Database/directAccess(_:)``
+
+### Database Services
+
+- ``Database/Service``
+- ``Database/getService(_:)``
+- ``Database/shutdownService(_:)``

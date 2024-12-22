@@ -1,0 +1,85 @@
+@Tutorial(time: 15) {
+    @Intro(title: "Declaring Models") {
+        This tutorial will guide you through building *Movies* - a simple movie browsing app.
+        You will start by setting up the project and creating the initial UI.
+        After that, you will create a model to represent a movie.
+    }
+    
+    @Section(title: "Project Setup") {
+        @ContentAndMedia {
+            Create a new Xcode project using the App template.
+        }
+        
+        @Steps {
+            @Step {
+                Open Xcode and create a new project.
+                
+                @Image(source: "MFA-1-NewProject")
+            }
+            
+            @Step {
+                Select the *App* template from iOS and click Next.
+                
+                @Image(source: "MFA-2-SelectTemplate")
+            }
+            
+            @Step {
+                Enter a *Product Name* and make sure that *Interface* is set to *SwiftUI*, *Language* is set to *Swift*.
+                The *Testing System* and *Storage* should be set to *None*.
+                
+                @Image(source: "MFA-3-ConfigureProject")
+            }
+            
+            @Step {
+                Now add RelationalSwift to your project.
+                Select the project in the Project Navigator, then select the project in the Project and Targets list.
+                Go to *Package Dependencies* and click the *+* button.
+                
+                @Image(source: "MFA-4-AddPackage")
+            }
+            
+            @Step {
+                Search for *RelationalSwift* by entering the URL of the repository then click *Add Package*.
+                
+                [https://github.com/kliliom/RelationalSwift](https://github.com/kliliom/RelationalSwift)
+                
+                @Image(source: "MFA-5-SearchPackage")
+            }
+            
+            @Step {
+                When the package resolution completes, add the package product to the app target and press
+                *Add Package*.
+                
+                @Image(source: "MFA-6-AddPackageToTarget")
+            }
+            
+            @Step {
+                Now you can see RelationalSwift in the Project Navigator under *Package Dependencies*.
+                Try to build and run the project.
+                
+                @Image(source: "MFA-7-PackageAdded")
+            }
+            
+            @Step {
+                In the issue navigator, you should see a warning and an error.
+                RelationalSwift uses macros, so you need to enable them.
+                Select the error.
+                
+                @Image(source: "MFA-8-IssueNavigator")
+            }
+            
+            @Step {
+                A dialog will appear, asking you to enable macros. Select *Trust & Enable*.
+                
+                @Image(source: "MFA-9-EnableMacros")
+            }
+            
+            @Step {
+                Do the same thing for the warning.
+                After that, try to build and run the project again, and you should see the app running.
+                
+                @Image(source: "MFA-10-ProjectSetupComplete")
+            }
+        }
+    }
+}

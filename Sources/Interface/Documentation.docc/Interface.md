@@ -4,7 +4,7 @@ Low level access to SQLite.
 
 ## Overview
 
-The ``Interface`` module provides low level access to SQLite. It is used by other higher level modules in
+The Interface module provides low level access to SQLite. It is used by other higher level modules in
 RelationalSwift to interact with SQLite databases.
 
 ### Gettings Started

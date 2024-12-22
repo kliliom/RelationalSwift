@@ -1,0 +1,12 @@
+@Tutorials(name: "RelationalSwift") {
+    @Intro(title: "Getting Started with RelationalSwift") {
+        In this tutorial, you will learn how to use RelationalSwift to interact with a SQLite database.
+        
+    }
+    
+    @Chapter(name: "My First App") {
+        We will build a simple SwiftUI app that interacts with a SQLite database.
+        
+        @TutorialReference(tutorial: "doc:Project-Setup")
+    }
+}
