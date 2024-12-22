@@ -20,15 +20,23 @@ extension Database {
         }
 
         /// Called when a transaction is about to begin.
+        ///
+        /// - Note: ``database`` is guaranteed to be open not nil.
         open func transactionWillBegin() {}
 
         /// Called when a transaction has committed.
+        ///
+        /// - Note: ``database`` is guaranteed to be open not nil.
         open func transactionDidCommit() {}
 
         /// Called when a transaction has rolled back.
+        ///
+        /// - Note: ``database`` is guaranteed to be open not nil.
         open func transactionDidRollback() {}
 
         /// Called when the service is about to be shut down.
+        ///
+        /// - Note: ``database`` may be nil if the database has been closed.
         open func shutdown() {}
     }
 

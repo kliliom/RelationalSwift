@@ -8,7 +8,37 @@ import Interface
 import SQLite3
 
 extension Database {
-    /// Observe changes in a table.
+    /// Observe changes to a table.
+    ///
+    /// Here is an example of observing changes to a table in a SwiftUI application:
+    ///
+    /// ```swift
+    /// struct UsersList: View {
+    ///     let db: Database
+    ///
+    ///     @State var users: [User] = []
+    ///
+    ///     var body: some View {
+    ///         List {
+    ///             ForEach(users) { user in
+    ///                 Text(user.name)
+    ///             }
+    ///         }
+    ///         .task {
+    ///             do {
+    ///                 for await users in try await db.observe(table: User.self) {
+    ///                     self.users = users
+    ///                 }
+    ///             } catch {
+    ///                 print("Failed to observe users: \(error)")
+    ///             }
+    ///         }
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// Observing a table is not compatible with tables that define `WITHOUT ROWID`.
+    ///
     /// - Parameters:
     ///   - table: Table to observe.
     ///   - limit: Buffering policy for the stream.
@@ -32,7 +62,42 @@ extension Database {
         return stream
     }
 
-    /// Observe changes in a row.
+    /// Observe changes to a row.
+    ///
+    /// Here is an example of observing changes to a row in a SwiftUI application:
+    ///
+    /// ```swift
+    /// struct UserDetails: View {
+    ///     let db: Database
+    ///     let subject: User
+    ///
+    ///     @State var user: User?
+    ///
+    ///     var body: some View {
+    ///         VStack {
+    ///             if let user {
+    ///                 Text("User ID: \(user.id)")
+    ///                 Text("User name: \(user.name)")
+    ///             } else {
+    ///                 Text("No such user")
+    ///             }
+    ///         }
+    ///         .task {
+    ///             do {
+    ///                 for await user in try await db.observe(row: subject) {
+    ///                     self.user = user
+    ///                 }
+    ///             } catch {
+    ///                 print("Failed to observe user: \(error)")
+    ///             }
+    ///         }
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// Observing a row requires the row to have a primary key and is not compatible with tables that define
+    /// `WITHOUT ROWID`.
+    ///
     /// - Parameters:
     ///   - row: Row to observe.
     ///   - limit: Buffering policy for the stream.
