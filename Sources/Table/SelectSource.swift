@@ -187,12 +187,17 @@ public struct SelectSource<T: TableRef>: Sendable {
     }
 
     /// Adds a condition to the select query.
+    ///
+    /// The condition is combined with the existing condition using the logical AND operator.
+    ///
     /// - Parameter block: Condition builder block.
     /// - Returns: Select source with the added condition.
     public func `where`(_ block: (T) throws -> Condition) rethrows -> SelectSource<T> {
-        try SelectSource(database: database,
-                         tableRef: tableRef,
-                         condition: block(tableRef))
+        try SelectSource(
+            database: database,
+            tableRef: tableRef,
+            condition: condition.map { try $0 && block(tableRef) } ?? block(tableRef)
+        )
     }
 }
 
