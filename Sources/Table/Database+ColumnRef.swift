@@ -7,7 +7,35 @@ import Foundation
 import Interface
 
 extension Database {
-    /// Queries a statement, assuming it returns zero or more rows.
+    /// Queries a statement.
+    ///
+    /// `query` methods can be used for statements that can return rows.
+    ///
+    /// The `binder` closure has a second parameter, `index`, which is a managed index for binding values.
+    /// You are responsible for binding values in the `binder` closure in the correct order using the `index`.
+    ///
+    /// Here is an example of querying a statement with parameters:
+    ///
+    /// ```swift
+    /// @Table("users")
+    /// struct User {
+    ///     @Column(primaryKey: true, insert: false) var id: Int
+    ///     @Column var name: String
+    ///     @Column var age: Int?
+    /// }
+    ///
+    /// let namesAndAges = try await db.query(
+    ///     "SELECT name, age FROM users WHERE age > ?",
+    ///     columns: User.table.name, User.table.age
+    /// ) { stmt, index in
+    ///     try 20.bind(to: stmt, at: &index)
+    /// }
+    ///
+    /// for (name, age) in namesAndAges {
+    ///     print("\(name) is \(age.map { String($0) } ?? "unknown") years old.")
+    /// }
+    /// ```
+    ///
     /// - Parameters:
     ///   - statement: The statement to execute.
     ///   - columns: Columns to extract.
@@ -17,65 +45,9 @@ extension Database {
     public func query<each Column: ColumnRef>(
         _ statement: String,
         columns _: repeat each Column,
-        binder: Binder
-    ) throws -> [(repeat (each Column).ValueType)] {
-        try query(statement, binder: binder) { stmt, _ in
-            var index = ManagedIndex()
-            return try (repeat (each Column).ValueType.column(of: stmt, at: &index))
-        }
-    }
-
-    /// Queries a statement, assuming it returns zero or more rows.
-    /// - Parameters:
-    ///   - statement: The statement to execute.
-    ///   - columns: Columns to extract.
-    /// - Returns: Result of the query.
-    @inline(__always)
-    public func query<each Column: ColumnRef>(
-        _ statement: String,
-        columns _: repeat each Column
-    ) throws -> [(repeat (each Column).ValueType)] {
-        try query(statement) { stmt, index, _ in
-            try (repeat (each Column).ValueType.column(of: stmt, at: &index))
-        }
-    }
-}
-
-extension Database {
-    /// Queries a statement.
-    /// - Parameters:
-    ///   - statement: Statement to execute.
-    ///   - columns: Columns to extract.
-    ///   - binder: Value binder.
-    /// - Returns: Result of the query.
-    @inline(__always)
-    public func query<each Column: ColumnRef>(
-        _ statement: String,
-        columns _: repeat each Column,
         binder: ManagedBinder
     ) throws -> [(repeat (each Column).ValueType)] {
         try query(statement, binder: binder) { stmt, index, _ in
-            try (repeat (each Column).ValueType.column(of: stmt, at: &index))
-        }
-    }
-}
-
-extension Database {
-    /// Queries a statement.
-    /// - Parameters:
-    ///   - statement: Statement to execute.
-    ///   - columns: Columns to extract.
-    ///   - firstValue: First value to bind.
-    ///   - otherValues: Other values to bind.
-    /// - Returns: Result of the query.
-    @inline(__always)
-    public func query<each Column: ColumnRef, each Values: Bindable>(
-        _ statement: String,
-        columns _: repeat each Column,
-        binding firstValue: some Bindable,
-        _ otherValues: repeat each Values
-    ) throws -> [(repeat (each Column).ValueType)] {
-        try query(statement, binding: firstValue, repeat each otherValues) { stmt, index, _ in
             try (repeat (each Column).ValueType.column(of: stmt, at: &index))
         }
     }
