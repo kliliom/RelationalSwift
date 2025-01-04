@@ -27,54 +27,28 @@ var package = Package(
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"),
     ],
     targets: [
-        // Interface
         .target(
-            name: "Interface"
+            name: "RelationalSwift",
+            dependencies: ["RelationalSwiftMacros"]
         ),
         .testTarget(
-            name: "InterfaceTests",
-            dependencies: ["Interface"]
+            name: "RelationalSwiftTests",
+            dependencies: ["RelationalSwift"]
         ),
-
-        // Table
         .macro(
-            name: "TableMacros",
+            name: "RelationalSwiftMacros",
             dependencies: [
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax")
             ]
         ),
         .testTarget(
-            name: "TableMacrosTests",
+            name: "RelationalSwiftMacrosTests",
             dependencies: [
-                "TableMacros",
+                "RelationalSwiftMacros",
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ]
         ),
-        .target(
-            name: "Table",
-            dependencies: ["TableMacros", "Interface"]
-        ),
-        .testTarget(
-            name: "TableTests",
-            dependencies: ["RelationalSwift"]
-        ),
-
-        // Migration
-        .target(
-            name: "Migration",
-            dependencies: ["Interface"]
-        ),
-        .testTarget(
-            name: "MigrationTests",
-            dependencies: ["Migration"]
-        ),
-
-        // RelationalSwift
-        .target(
-            name: "RelationalSwift",
-            dependencies: ["Interface", "Table", "Migration"]
-        )
     ]
 )
 
@@ -83,7 +57,7 @@ if useSwiftFormat {
         .package(url: "https://github.com/kliliom/SwiftFormatPlugin.git", from: "0.54.5")
     )
 
-    let targets = ["Interface", "TableMacros", "Table", "Migration"]
+    let targets = ["RelationalSwift", "RelationalSwiftMacros"]
     package.targets.forEach { target in
         guard targets.contains(where: { target.name == $0 || target.name == "\($0)Tests" }) else { return }
         if target.plugins == nil {
