@@ -87,8 +87,8 @@ struct MemberGenerator {
         """)
 
         members.append("""
-        var _readColumnSqlRefs: [String] {
-            [\(table.columns.map { "\($0.codeName)._sqlRef" }.joined(separator: ", "))]
+        var _allColumnRefs: [any ColumnRef] {
+            [\(table.columns.map { "\($0.codeName)" }.joined(separator: ", "))]
         }
         """)
 

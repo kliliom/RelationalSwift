@@ -13,7 +13,7 @@ private let SQLITE_STATIC = unsafeBitCast(0, to: sqlite3_destructor_type.self)
 private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
 /// A type that can be bound to a statement as a parameter or extracted from a statement as a column.
-public protocol Bindable: Sendable {
+public protocol Bindable: Expression<Self> & Sendable {
     /// Binds a value to a statement as a parameter.
     ///
     /// This method can be used inside ``Database/Binder`` closures.
@@ -56,6 +56,13 @@ public protocol Bindable: Sendable {
 
     /// The default SQL storage type for the value.
     static var detaultSQLStorageType: String { get }
+}
+
+extension Bindable {
+    public func append(to builder: SQLBuilder) {
+        builder.sql.append("?")
+        builder.binders.append(managedBinder)
+    }
 }
 
 extension Bindable {
@@ -449,6 +456,15 @@ extension Bindable where Self: RawRepresentable, RawValue: Bindable {
     public static var detaultSQLStorageType: String { RawValue.detaultSQLStorageType }
 }
 
+extension Optional: Expression where Wrapped: Bindable {
+    public typealias ExpressionValue = Self
+
+    public func append(to builder: SQLBuilder) {
+        builder.sql.append("?")
+        builder.binders.append(managedBinder)
+    }
+}
+
 extension Optional: Bindable where Wrapped: Bindable {
     public static func bind(to stmt: borrowing StatementHandle, value: Self, at index: Int32) throws {
         if let value {
@@ -478,5 +494,24 @@ extension Optional: Bindable where Wrapped: Bindable {
     public static var detaultSQLStorageType: String { Wrapped.detaultSQLStorageType }
 }
 
+extension Array: Expression where Self: Codable, Element: Bindable {
+    public typealias ExpressionValue = Self
+
+    public func append(to builder: SQLBuilder) {
+        builder.sql.append("?")
+        builder.binders.append(managedBinder)
+    }
+}
+
 extension Array: Bindable where Self: Codable, Element: Bindable {}
+
+extension Dictionary: Expression where Self: Codable, Key: Bindable, Value: Bindable {
+    public typealias ExpressionValue = Self
+
+    public func append(to builder: SQLBuilder) {
+        builder.sql.append("?")
+        builder.binders.append(managedBinder)
+    }
+}
+
 extension Dictionary: Bindable where Self: Codable, Key: Bindable, Value: Bindable {}

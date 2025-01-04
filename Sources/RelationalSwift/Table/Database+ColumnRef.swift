@@ -41,13 +41,13 @@ extension Database {
     ///   - binder: A closure that binds values to the statement.
     /// - Returns: Description
     @inline(__always)
-    public func query<each Column: ColumnRef>(
+    public func query<each Column: Expression>(
         _ statement: String,
         columns _: repeat each Column,
         binder: ManagedBinder
-    ) throws -> [(repeat (each Column).ValueType)] {
+    ) throws -> [(repeat (each Column).ExpressionValue)] where repeat (each Column).ExpressionValue: Bindable {
         try query(statement, binder: binder) { stmt, index, _ in
-            try (repeat (each Column).ValueType.column(of: stmt, at: &index))
+            try (repeat (each Column).ExpressionValue.column(of: stmt, at: &index))
         }
     }
 }

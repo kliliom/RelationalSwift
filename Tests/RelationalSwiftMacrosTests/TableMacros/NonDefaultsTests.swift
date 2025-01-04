@@ -94,8 +94,8 @@ final class NonDefaultsTests: XCTestCase {
                                 _identifier
                             }
                         }
-                        var _readColumnSqlRefs: [String] {
-                            [id._sqlRef, name._sqlRef, age._sqlRef, gender._sqlRef, createdAt._sqlRef, updatedAt._sqlRef]
+                        var _allColumnRefs: [any ColumnRef] {
+                            [id, name, age, gender, createdAt, updatedAt]
                         }
                     }
                 }

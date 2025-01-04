@@ -3,115 +3,44 @@
 //  Created by Kristof Liliom in 2024.
 //
 
-import Foundation
+func buildSelect(
+    into builder: SQLBuilder,
+    from table: String,
+    columns: [any Expression],
+    condition: (some Expression)? = nil,
+    limit: Int? = nil,
+    offset: Int? = nil
+) {
+    builder.sql.append("SELECT")
 
-/// A builder for a select query.
-struct SelectBuilder {
-    /// Source table.
-    let from: String
-
-    /// Columns to select.
-    let columns: [String]
-
-    /// Columns binders.
-    let columnBinders: [Database.ManagedBinder]
-
-    /// Condition.
-    let condition: Condition?
-
-    /// Row limit.
-    let limit: Int?
-
-    /// Row offset.
-    let offset: Int?
-
-    /// Initializes a new select query builder.
-    /// - Parameters:
-    ///   - from: Source table.
-    ///   - columns: Columns to select.
-    ///   - condition: Condition.
-    ///   - limit: Row limit.
-    ///   - offset: Row offset.
-    init(from: String, columns: [String], condition: Condition?, limit: Int?, offset: Int?) {
-        self.from = from
-        self.columns = columns
-        columnBinders = []
-        self.condition = condition
-        self.limit = limit
-        self.offset = offset
+    var isFirstColumn = true
+    for column in columns {
+        if isFirstColumn {
+            isFirstColumn = false
+        } else {
+            builder.sql.append(",")
+        }
+        column.append(to: builder)
     }
 
-    /// Initializes a new select query builder.
-    /// - Parameters:
-    ///   - from: Source table.
-    ///   - columns: Columns to select.
-    ///   - condition: Condition.
-    ///   - limit: Row limit.
-    ///   - offset: Row offset.
-    init(from: String, columns: [any ColumnRef], condition: Condition?, limit: Int?, offset: Int?) {
-        self.from = from
-        self.columns = columns.map(\._sqlRef)
-        columnBinders = columns.compactMap(\.binder)
-        self.condition = condition
-        self.limit = limit
-        self.offset = offset
+    builder.sql.append("FROM")
+    builder.sql.append(table)
+
+    if let condition {
+        builder.sql.append("WHERE")
+        condition.append(to: builder)
     }
 
-    /// Binder for the select query.
-    var binder: Database.ManagedBinder {
-        var binder: Database.ManagedBinder = { _, _ in }
-        for columnBinder in columnBinders {
-            let currentBinder = binder
-            binder = { stmt, index in
-                try currentBinder(stmt, &index)
-                try columnBinder(stmt, &index)
-            }
-        }
-        if let condition {
-            let currentBinder = binder
-            binder = { stmt, index in
-                try currentBinder(stmt, &index)
-                try condition.binder(stmt, &index)
-            }
-        }
-        if let limit {
-            let currentBinder = binder
-            binder = { stmt, index in
-                try currentBinder(stmt, &index)
-                try Int.bind(to: stmt, value: limit, at: &index)
-            }
-        }
-        if let offset {
-            let currentBinder = binder
-            binder = { stmt, index in
-                try currentBinder(stmt, &index)
-                try Int.bind(to: stmt, value: offset, at: &index)
-            }
-        }
-        return binder
+    if let limit {
+        builder.sql.append("LIMIT ?")
+        builder.binders.append(limit.managedBinder)
     }
-
-    /// SQL statement for the select query.
-    /// - Returns: SQL statement.
-    func statement() throws -> String {
-        guard !columns.isEmpty else {
-            throw RelationalSwiftError.noColumnsSpecified
+    if let offset {
+        if limit == nil {
+            builder.sql.append("LIMIT -1 OFFSET ?")
+        } else {
+            builder.sql.append("OFFSET ?")
         }
-        var statement = ["SELECT", columns.joined(separator: ", "), "FROM", from]
-        if let condition {
-            statement.append("WHERE")
-            statement.append(condition.sql)
-        }
-        if limit != nil {
-            statement.append("LIMIT ?")
-        }
-        if offset != nil {
-            if limit == nil {
-                statement.append("LIMIT -1 OFFSET ?")
-            } else {
-                statement.append("OFFSET ?")
-            }
-        }
-        return statement.joined(separator: " ")
+        builder.binders.append(offset.managedBinder)
     }
 }

@@ -14,7 +14,7 @@ public struct SelectSource<T: TableRef>: Sendable {
     let tableRef: T
 
     /// Condition.
-    let condition: Condition?
+    let condition: ExprCastExpression<Bool?>?
 
     /// Creates a select query for selected columns.
     /// - Parameters:
@@ -22,23 +22,22 @@ public struct SelectSource<T: TableRef>: Sendable {
     ///   - limit: Row limit.
     ///   - offset: Row offset.
     /// - Returns: Result of the query.
-    public func query<each Column: ColumnRef>(
-        _ block: (T) -> (repeat each Column),
+    public func query<Column: Expression>(
+        _ block: (T) -> (Column),
         limit: Int? = nil,
         offset: Int? = nil
-    ) throws -> (String, Database.ManagedBinder, (repeat (each Column).ValueType).Type) {
-        let columnRefs = block(tableRef)
-        var columnSqlRefs: [any ColumnRef] = []
-        repeat (columnSqlRefs.append(each columnRefs))
-
-        let select = SelectBuilder(
+    ) throws -> SingleValueQuery<Column.ExpressionValue> where Column.ExpressionValue: Bindable {
+        let builder = SQLBuilder()
+        buildSelect(
+            into: builder,
             from: tableRef._sqlFrom,
-            columns: columnSqlRefs,
+            columns: [block(tableRef)],
             condition: condition,
             limit: limit,
             offset: offset
         )
-        return try (select.statement(), select.binder, (repeat (each Column).ValueType).self)
+
+        return SingleValueQuery(from: builder)
     }
 
     /// Executes a select query for selected columns.
@@ -48,27 +47,30 @@ public struct SelectSource<T: TableRef>: Sendable {
     ///   - offset: Row offset.
     /// - Returns: Result of the query.
     @DatabaseActor
-    public func select<each Column: ColumnRef>(
+    public func select<each Column: Expression>(
         _ block: (T) -> (repeat each Column),
         limit: Int? = nil,
         offset: Int? = nil
-    ) throws -> [(repeat (each Column).ValueType)] {
+    ) throws -> [(repeat (each Column).ExpressionValue)] where repeat (each Column).ExpressionValue: Bindable {
         let columnRefs = block(tableRef)
-        var columnSqlRefs: [any ColumnRef] = []
+        var columnSqlRefs: [any Expression] = []
         repeat (columnSqlRefs.append(each columnRefs))
 
-        let select = SelectBuilder(
+        let builder = SQLBuilder()
+        buildSelect(
+            into: builder,
             from: tableRef._sqlFrom,
             columns: columnSqlRefs,
             condition: condition,
             limit: limit,
             offset: offset
         )
+
         let database = database
         return try database.query(
-            select.statement(),
+            builder.statement(),
             columns: repeat each columnRefs,
-            binder: select.binder
+            binder: builder.binder()
         )
     }
 
@@ -82,15 +84,18 @@ public struct SelectSource<T: TableRef>: Sendable {
         limit: Int? = nil,
         offset: Int? = nil
     ) throws -> [T.TableType] {
-        let select = SelectBuilder(
+        let builder = SQLBuilder()
+        buildSelect(
+            into: builder,
             from: tableRef._sqlFrom,
-            columns: tableRef._readColumnSqlRefs,
+            columns: tableRef._allColumnRefs,
             condition: condition,
             limit: limit,
             offset: offset
         )
+
         let database = database
-        return try database.query(select.statement(), binder: select.binder) { stmt, index, _ in
+        return try builder.query(in: database) { stmt, index, _ in
             try T.TableType.read(from: stmt, startingAt: &index)
         }
     }
@@ -99,9 +104,9 @@ public struct SelectSource<T: TableRef>: Sendable {
     /// - Returns: First entry of the query or nil.
     /// - Parameter block: Columns builder block.
     @DatabaseActor
-    public func selectFirst<each Column: ColumnRef>(
+    public func selectFirst<each Column: Expression>(
         _ block: (T) -> (repeat each Column)
-    ) throws -> (repeat (each Column).ValueType)? {
+    ) throws -> (repeat (each Column).ExpressionValue)? where repeat (each Column).ExpressionValue: Bindable {
         try select(block, limit: 1).first
     }
 
@@ -119,8 +124,8 @@ public struct SelectSource<T: TableRef>: Sendable {
     @DatabaseActor
     public func update<each Column: ColumnRef>(
         columns: repeat KeyPath<T, each Column>,
-        values: repeat (each Column).ValueType
-    ) throws {
+        values: repeat (each Column).ExpressionValue
+    ) throws where repeat (each Column).ExpressionValue: Bindable {
         var setters = [ColumnValueSetter]()
         repeat setters.append(
             ColumnValueSetter(
@@ -129,44 +134,54 @@ public struct SelectSource<T: TableRef>: Sendable {
             )
         )
 
-        let stmt = UpdateBuilder(
-            from: tableRef._sqlFrom,
+        let builder = SQLBuilder()
+        buildUpdate(
+            into: builder,
+            in: tableRef._sqlFrom,
             setters: setters,
             condition: condition
         )
+
         let database = database
-        return try database.exec(stmt.statement(), binder: stmt.binder)
+        return try database.exec(builder.statement(), binder: builder.binder())
     }
 
     /// Executes a delete statement.
     @DatabaseActor
     public func delete() throws {
-        let stmt = DeleteBuilder(
+        let builder = SQLBuilder()
+        buildDelete(
+            into: builder,
             from: tableRef._sqlFrom,
             condition: condition
         )
+
         let database = database
-        return try database.exec(stmt.statement(), binder: stmt.binder)
+        return try database.exec(builder.statement(), binder: builder.binder())
     }
 
     /// Executes a count statement.
     /// - Parameters:
     ///   - distinct: Count only distinct rows. Default is `false`.
-    ///   - block: Column builder block.
+    ///   - block: Expression builder block.
     /// - Returns: The count of the column vaues.
     @DatabaseActor
     public func count(
         distinct: Bool = false,
-        _ block: (T) -> any ColumnRef
+        _ block: (T) -> any Expression
     ) throws -> Int64 {
-        let stmt = CountBuilder(
+        let builder = SQLBuilder()
+        buildSelect(
+            into: builder,
             from: tableRef._sqlFrom,
-            column: block(tableRef),
-            condition: condition,
-            distinct: distinct
+            columns: [
+                block(tableRef).count(distinct: distinct),
+            ],
+            condition: condition
         )
+
         let database = database
-        return try database.query(stmt.statement(), binder: stmt.binder) { stmt, index, _ in
+        return try builder.query(in: database) { stmt, index, _ in
             try Int64.column(of: stmt, at: &index)
         }.first ?? 0
     }
@@ -175,12 +190,18 @@ public struct SelectSource<T: TableRef>: Sendable {
     /// - Returns: The count of the rows.
     @DatabaseActor
     public func count() throws -> Int64 {
-        let stmt = CountBuilder(
+        let builder = SQLBuilder()
+        buildSelect(
+            into: builder,
             from: tableRef._sqlFrom,
+            columns: [
+                sqlAllColumns.count(),
+            ],
             condition: condition
         )
+
         let database = database
-        return try database.query(stmt.statement(), binder: stmt.binder) { stmt, index, _ in
+        return try builder.query(in: database) { stmt, index, _ in
             try Int64.column(of: stmt, at: &index)
         }.first ?? 0
     }
@@ -191,11 +212,31 @@ public struct SelectSource<T: TableRef>: Sendable {
     ///
     /// - Parameter block: Condition builder block.
     /// - Returns: Select source with the added condition.
-    public func `where`(_ block: (T) throws -> Condition) rethrows -> SelectSource<T> {
-        try SelectSource(
+    public func `where`<E: Expression>(
+        _ block: (T) throws -> E
+    ) rethrows -> SelectSource<T> where E.ExpressionValue == Bool {
+        try `where` { try block($0).unsafeExprCast(to: Bool?.self) }
+    }
+
+    /// Adds a condition to the select query.
+    ///
+    /// The condition is combined with the existing condition using the logical AND operator.
+    ///
+    /// - Parameter block: Condition builder block.
+    /// - Returns: Select source with the added condition.
+    public func `where`<E: Expression>(
+        _ block: (T) throws -> E
+    ) rethrows -> SelectSource<T> where E.ExpressionValue == Bool? {
+        let condition = if let condition {
+            try (condition && block(tableRef)).unsafeExprCast(to: Bool?.self)
+        } else {
+            try block(tableRef).unsafeExprCast(to: Bool?.self)
+        }
+
+        return SelectSource(
             database: database,
             tableRef: tableRef,
-            condition: condition.map { try $0 && block(tableRef) } ?? block(tableRef)
+            condition: condition
         )
     }
 }

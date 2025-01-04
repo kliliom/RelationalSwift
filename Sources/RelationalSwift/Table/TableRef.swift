@@ -16,6 +16,6 @@ public protocol TableRef: Sendable {
     /// SQL reference.
     var _sqlRef: String { get }
 
-    /// SQL references for columns.
-    var _readColumnSqlRefs: [String] { get }
+    /// References for all columns.
+    var _allColumnRefs: [any ColumnRef] { get }
 }

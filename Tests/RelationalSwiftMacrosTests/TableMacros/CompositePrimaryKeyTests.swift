@@ -74,8 +74,8 @@ final class CompositePrimaryKeyTests: XCTestCase {
                                 _identifier
                             }
                         }
-                        var _readColumnSqlRefs: [String] {
-                            [id1._sqlRef, id2._sqlRef]
+                        var _allColumnRefs: [any ColumnRef] {
+                            [id1, id2]
                         }
                     }
                 }

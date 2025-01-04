@@ -74,8 +74,8 @@ final class DefaultsTests: XCTestCase {
                                 _identifier
                             }
                         }
-                        var _readColumnSqlRefs: [String] {
-                            [id._sqlRef, name._sqlRef]
+                        var _allColumnRefs: [any ColumnRef] {
+                            [id, name]
                         }
                     }
                 }
