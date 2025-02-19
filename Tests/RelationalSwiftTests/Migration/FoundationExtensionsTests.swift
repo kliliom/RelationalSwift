@@ -16,8 +16,8 @@ struct FoundationExtensionsTests {
 
     @Test("Append to SQLBuilder as SQL identifier list")
     func appendAsSQLIdentifierList() {
-        let builder = SQLBuilder()
-        ["a", "b"].appendAsSQLIdentifierList(to: builder)
+        var builder = SQLBuilder()
+        ["a", "b"].appendAsSQLIdentifierList(to: &builder)
 
         #expect(builder.sql == ["(", "\"a\"", ",", "\"b\"", ")"])
     }

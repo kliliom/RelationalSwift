@@ -35,9 +35,9 @@ public struct SelectSource<T: TableRef>: Sendable {
         limit: Int? = nil,
         offset: Int? = nil
     ) throws -> SingleValueQuery<Column.ExpressionValue> where Column.ExpressionValue: Bindable {
-        let builder = SQLBuilder()
+        var builder = SQLBuilder()
         buildSelect(
-            into: builder,
+            into: &builder,
             from: tableRef._sqlFrom,
             columns: [block(tableRef)],
             condition: condition,
@@ -67,9 +67,9 @@ public struct SelectSource<T: TableRef>: Sendable {
         var columnSqlRefs: [any Expression] = []
         repeat (columnSqlRefs.append(each columnRefs))
 
-        let builder = SQLBuilder()
+        var builder = SQLBuilder()
         buildSelect(
-            into: builder,
+            into: &builder,
             from: tableRef._sqlFrom,
             columns: columnSqlRefs,
             condition: condition,
@@ -98,9 +98,9 @@ public struct SelectSource<T: TableRef>: Sendable {
         limit: Int? = nil,
         offset: Int? = nil
     ) throws -> [T.TableType] {
-        let builder = SQLBuilder()
+        var builder = SQLBuilder()
         buildSelect(
-            into: builder,
+            into: &builder,
             from: tableRef._sqlFrom,
             columns: tableRef._allColumnRefs,
             condition: condition,
@@ -112,9 +112,9 @@ public struct SelectSource<T: TableRef>: Sendable {
         )
 
         let database = database
-        return try builder.query(in: database) { stmt, index, _ in
+        return try database.run(builder.makeStatement().query { stmt, index, _ in
             try T.TableType.read(from: stmt, startingAt: &index)
-        }
+        })
     }
 
     /// Executes a select query for all columns and returns the first entry (if exists).
@@ -151,9 +151,9 @@ public struct SelectSource<T: TableRef>: Sendable {
             )
         )
 
-        let builder = SQLBuilder()
+        var builder = SQLBuilder()
         buildUpdate(
-            into: builder,
+            into: &builder,
             in: tableRef._sqlFrom,
             setters: setters,
             condition: condition
@@ -166,9 +166,9 @@ public struct SelectSource<T: TableRef>: Sendable {
     /// Executes a delete statement.
     @DatabaseActor
     public func delete() throws {
-        let builder = SQLBuilder()
+        var builder = SQLBuilder()
         buildDelete(
-            into: builder,
+            into: &builder,
             from: tableRef._sqlFrom,
             condition: condition
         )
@@ -187,9 +187,9 @@ public struct SelectSource<T: TableRef>: Sendable {
         distinct: Bool = false,
         _ block: (T) -> any Expression
     ) throws -> Int64 {
-        let builder = SQLBuilder()
+        var builder = SQLBuilder()
         buildSelect(
-            into: builder,
+            into: &builder,
             from: tableRef._sqlFrom,
             columns: [
                 block(tableRef).count(distinct: distinct),
@@ -201,18 +201,18 @@ public struct SelectSource<T: TableRef>: Sendable {
         )
 
         let database = database
-        return try builder.query(in: database) { stmt, index, _ in
+        return try database.run(builder.makeStatement().query { stmt, index, _ in
             try Int64.column(of: stmt, at: &index)
-        }.first ?? 0
+        }).first ?? 0
     }
 
     /// Executes a count statement
     /// - Returns: The count of the rows.
     @DatabaseActor
     public func count() throws -> Int64 {
-        let builder = SQLBuilder()
+        var builder = SQLBuilder()
         buildSelect(
-            into: builder,
+            into: &builder,
             from: tableRef._sqlFrom,
             columns: [
                 sqlAllColumns.count(),
@@ -224,9 +224,9 @@ public struct SelectSource<T: TableRef>: Sendable {
         )
 
         let database = database
-        return try builder.query(in: database) { stmt, index, _ in
+        return try database.run(builder.makeStatement().query { stmt, index, _ in
             try Int64.column(of: stmt, at: &index)
-        }.first ?? 0
+        }).first ?? 0
     }
 
     /// Adds a condition to the select query.

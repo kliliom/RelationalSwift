@@ -5,7 +5,7 @@
 import Foundation
 
 /// Column definition for a table.
-public struct Column: SQLConvertible, Sendable {
+public struct Column: SQLBuilderAppendable, Sendable {
     /// Name of the column.
     public var name: String
 
@@ -142,11 +142,11 @@ public struct Column: SQLConvertible, Sendable {
         }
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append(name.asSQLIdentifier)
-        storage.append(to: builder)
+        storage.append(to: &builder)
         for constraint in constraints {
-            constraint.append(to: builder)
+            constraint.append(to: &builder)
         }
     }
 }

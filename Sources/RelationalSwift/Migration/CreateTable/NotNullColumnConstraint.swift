@@ -29,14 +29,14 @@ public struct NotNullColumnConstraint: ColumnConstraint {
         }
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         if let constraintName {
             builder.sql.append("CONSTRAINT")
             builder.sql.append(constraintName.asSQLIdentifier)
         }
         builder.sql.append("NOT NULL")
         if let onConflict {
-            onConflict.append(to: builder)
+            onConflict.append(to: &builder)
         }
     }
 }

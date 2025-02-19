@@ -14,7 +14,12 @@ public struct SingleValueQuery<Value>: Sendable {
     }
 
     public init(from builder: SQLBuilder) {
-        statement = builder.statement()
-        binder = builder.binder()
+        let binders = builder.binders
+        statement = builder.sql.joined(separator: " ")
+        binder = { stmt, index in
+            for binder in binders {
+                try binder(stmt, &index)
+            }
+        }
     }
 }

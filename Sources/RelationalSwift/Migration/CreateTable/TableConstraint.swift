@@ -3,7 +3,7 @@
 //
 
 /// A constraint on a table.
-public protocol TableConstraint: SQLConvertible, Sendable {
+public protocol TableConstraint: SQLBuilderAppendable, Sendable {
     /// Name of the constraint.
     var constraintName: String? { get }
 

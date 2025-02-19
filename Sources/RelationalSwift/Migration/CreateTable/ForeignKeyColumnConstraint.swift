@@ -51,7 +51,7 @@ public struct ForeignKeyColumnConstraint: ColumnConstraint {
         }
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         if let constraintName {
             builder.sql.append("CONSTRAINT")
             builder.sql.append(constraintName.asSQLIdentifier)
@@ -59,15 +59,15 @@ public struct ForeignKeyColumnConstraint: ColumnConstraint {
         builder.sql.append("REFERENCES")
         builder.sql.append(foreignTable.asSQLIdentifier)
         if let foreignColumn {
-            [foreignColumn].appendAsSQLIdentifierList(to: builder)
+            [foreignColumn].appendAsSQLIdentifierList(to: &builder)
         }
         if let onUpdate {
             builder.sql.append("ON UPDATE")
-            onUpdate.append(to: builder)
+            onUpdate.append(to: &builder)
         }
         if let onDelete {
             builder.sql.append("ON DELETE")
-            onDelete.append(to: builder)
+            onDelete.append(to: &builder)
         }
     }
 }

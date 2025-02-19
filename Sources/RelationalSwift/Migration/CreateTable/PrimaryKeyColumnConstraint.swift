@@ -45,17 +45,17 @@ public struct PrimaryKeyColumnConstraint: ColumnConstraint {
         }
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         if let constraintName {
             builder.sql.append("CONSTRAINT")
             builder.sql.append(constraintName.asSQLIdentifier)
         }
         builder.sql.append("PRIMARY KEY")
         if let order {
-            order.append(to: builder)
+            order.append(to: &builder)
         }
         if let onConflict {
-            onConflict.append(to: builder)
+            onConflict.append(to: &builder)
         }
         if autoIncrement {
             builder.sql.append("AUTOINCREMENT")

@@ -35,7 +35,7 @@ public struct UnsafeCheckTableConstraint: TableConstraint {
         }
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         if let constraintName {
             builder.sql.append("CONSTRAINT")
             builder.sql.append(constraintName.asSQLIdentifier)

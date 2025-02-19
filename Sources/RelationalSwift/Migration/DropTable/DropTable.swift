@@ -2,7 +2,7 @@
 //  DropTable.swift
 //
 
-public struct DropTable: Change, SQLConvertible {
+public struct DropTable: Change, SQLBuilderAppendable {
     public var tableName: String
     public var schemaName: String?
     public var ifExistsFlag: Bool = false
@@ -30,7 +30,7 @@ public struct DropTable: Change, SQLConvertible {
         return copy
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("DROP TABLE")
         if ifExistsFlag {
             builder.sql.append("IF EXISTS")
@@ -43,8 +43,8 @@ public struct DropTable: Change, SQLConvertible {
     }
 
     public func apply(to db: Database) throws {
-        let builder = SQLBuilder()
-        append(to: builder)
-        try builder.execute(in: db)
+        var builder = SQLBuilder()
+        append(to: &builder)
+        try db.run(builder.makeStatement())
     }
 }

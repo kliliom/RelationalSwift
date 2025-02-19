@@ -17,8 +17,8 @@ struct ForeignKeyActionTests {
     ] as [(ForeignKeyAction, [String])])
     func appendToBuilder(argument: (ForeignKeyAction, [String])) {
         let action = argument.0
-        let builder = SQLBuilder()
-        action.append(to: builder)
+        var builder = SQLBuilder()
+        action.append(to: &builder)
         #expect(builder.sql == [argument.1.first!])
     }
 }

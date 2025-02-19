@@ -12,7 +12,7 @@ public enum OrderingTerm: Sendable {
     case desc(any Expression, nullPosition: NullPosition? = nil)
 }
 
-extension OrderingTerm: SQLConvertible {
+extension OrderingTerm: SQLBuilderAppendable {
     private var sqlOrder: String {
         switch self {
         case .asc:
@@ -22,11 +22,11 @@ extension OrderingTerm: SQLConvertible {
         }
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         switch self {
         case let .asc(expression, nullPosition),
              let .desc(expression, nullPosition):
-            expression.append(to: builder)
+            expression.append(to: &builder)
 
             builder.sql.append(sqlOrder)
 

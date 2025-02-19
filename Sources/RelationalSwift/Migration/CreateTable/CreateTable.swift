@@ -3,7 +3,7 @@
 //
 
 /// A change that creates a table.
-public struct CreateTable: Change, SQLConvertible {
+public struct CreateTable: Change, SQLBuilderAppendable {
     /// Name of the table.
     public var tableName: String
 
@@ -104,7 +104,7 @@ public struct CreateTable: Change, SQLConvertible {
         return copy
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("CREATE")
         if temporaryFlag {
             builder.sql.append("TEMPORARY")
@@ -129,7 +129,7 @@ public struct CreateTable: Change, SQLConvertible {
                 builder.sql.append(",")
             }
             builder.sql.append("\n   ")
-            column.append(to: builder)
+            column.append(to: &builder)
         }
 
         for constraint in constraints {
@@ -139,7 +139,7 @@ public struct CreateTable: Change, SQLConvertible {
                 builder.sql.append(",")
             }
             builder.sql.append("\n   ")
-            constraint.append(to: builder)
+            constraint.append(to: &builder)
         }
 
         if !isFirstLine {
@@ -161,8 +161,8 @@ public struct CreateTable: Change, SQLConvertible {
     }
 
     public func apply(to db: Database) throws {
-        let builder = SQLBuilder()
-        append(to: builder)
-        try builder.execute(in: db)
+        var builder = SQLBuilder()
+        append(to: &builder)
+        try db.run(builder.makeStatement())
     }
 }

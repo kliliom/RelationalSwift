@@ -5,7 +5,7 @@
 import Foundation
 
 func buildUpdate(
-    into builder: SQLBuilder,
+    into builder: inout SQLBuilder,
     in table: String,
     setters: [ColumnValueSetter],
     condition: (some Expression)?
@@ -24,6 +24,6 @@ func buildUpdate(
     }
     if let condition {
         builder.sql.append("WHERE")
-        condition.append(to: builder)
+        condition.append(to: &builder)
     }
 }

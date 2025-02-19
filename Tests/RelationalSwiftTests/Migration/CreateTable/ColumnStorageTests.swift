@@ -18,8 +18,8 @@ struct ColumnStorageTests {
         (.unsafe("FLOAT"), "FLOAT"),
     ] as [(ColumnStorage, String)])
     func columnStorageAppendToBuilder(argument: (ColumnStorage, String)) {
-        let builder = SQLBuilder()
-        argument.0.append(to: builder)
+        var builder = SQLBuilder()
+        argument.0.append(to: &builder)
 
         #expect(builder.sql == [argument.1])
     }

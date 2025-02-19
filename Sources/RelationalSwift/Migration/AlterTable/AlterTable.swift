@@ -3,7 +3,7 @@
 //
 
 /// Base for all alter table changes.
-public struct AlterTable: SQLConvertible, Sendable {
+public struct AlterTable: SQLBuilderAppendable, Sendable {
     /// Name of the table to alter.
     public var tableName: String
 
@@ -19,7 +19,7 @@ public struct AlterTable: SQLConvertible, Sendable {
         self.schemaName = schemaName
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("ALTER TABLE")
         if let schemaName {
             builder.sql.append(schemaName.asSQLIdentifier)

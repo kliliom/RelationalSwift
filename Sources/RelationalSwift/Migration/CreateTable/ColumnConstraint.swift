@@ -3,7 +3,7 @@
 //
 
 /// A constraint that can be applied to a column.
-public protocol ColumnConstraint: SQLConvertible, Sendable {
+public protocol ColumnConstraint: SQLBuilderAppendable, Sendable {
     /// Name of the constraint.
     var constraintName: String? { get }
 

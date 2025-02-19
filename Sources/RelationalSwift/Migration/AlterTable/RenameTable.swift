@@ -21,8 +21,8 @@ public struct RenameTable: AlterTableChange {
         self.newTableName = newTableName
     }
 
-    public func append(to builder: SQLBuilder) {
-        alterTable.append(to: builder)
+    public func append(to builder: inout SQLBuilder) {
+        alterTable.append(to: &builder)
         builder.sql.append("RENAME TO")
         builder.sql.append(newTableName.asSQLIdentifier)
     }
@@ -38,9 +38,9 @@ public struct RenameTable: AlterTableChange {
     }
 
     public func apply(to db: Database) throws {
-        let builder = SQLBuilder()
-        append(to: builder)
-        try builder.execute(in: db)
+        var builder = SQLBuilder()
+        append(to: &builder)
+        try db.run(builder.makeStatement())
     }
 }
 

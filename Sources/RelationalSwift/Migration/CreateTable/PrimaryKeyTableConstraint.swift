@@ -51,15 +51,15 @@ public struct PrimaryKeyTableConstraint: TableConstraint {
         }
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         if let constraintName {
             builder.sql.append("CONSTRAINT")
             builder.sql.append(constraintName.asSQLIdentifier)
         }
         builder.sql.append("PRIMARY KEY")
-        columns.appendAsSQLIdentifierList(to: builder)
+        columns.appendAsSQLIdentifierList(to: &builder)
         if let onConflict {
-            onConflict.append(to: builder)
+            onConflict.append(to: &builder)
         }
     }
 }

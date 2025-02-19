@@ -17,8 +17,8 @@ struct ConflictResolutionTests {
     ] as [(ConflictResolution, [String])])
     func appendToBuilder(argument: (ConflictResolution, [String])) {
         let resolution = argument.0
-        let builder = SQLBuilder()
-        resolution.append(to: builder)
+        var builder = SQLBuilder()
+        resolution.append(to: &builder)
         #expect(builder.sql == [argument.1.first!])
     }
 }

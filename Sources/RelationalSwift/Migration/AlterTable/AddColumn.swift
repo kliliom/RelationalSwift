@@ -21,10 +21,10 @@ public struct AddColumn: AlterTableChange {
         self.column = column
     }
 
-    public func append(to builder: SQLBuilder) {
-        alterTable.append(to: builder)
+    public func append(to builder: inout SQLBuilder) {
+        alterTable.append(to: &builder)
         builder.sql.append("ADD COLUMN")
-        column.append(to: builder)
+        column.append(to: &builder)
     }
 
     public func validate(in validation: Validation) {
@@ -35,9 +35,9 @@ public struct AddColumn: AlterTableChange {
     }
 
     public func apply(to db: Database) throws {
-        let builder = SQLBuilder()
-        append(to: builder)
-        try builder.execute(in: db)
+        var builder = SQLBuilder()
+        append(to: &builder)
+        try db.run(builder.makeStatement())
     }
 }
 

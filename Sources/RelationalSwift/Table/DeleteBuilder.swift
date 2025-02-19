@@ -5,7 +5,7 @@
 import Foundation
 
 func buildDelete(
-    into builder: SQLBuilder,
+    into builder: inout SQLBuilder,
     from table: String,
     condition: (some Expression)?
 ) {
@@ -14,6 +14,6 @@ func buildDelete(
 
     if let condition {
         builder.sql.append("WHERE")
-        condition.append(to: builder)
+        condition.append(to: &builder)
     }
 }

@@ -60,7 +60,7 @@ public struct TypedColumnRef<Value: Bindable>: ColumnRef {
 
     public let binder: Database.ManagedBinder? = nil
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append(_sqlRef)
     }
 }

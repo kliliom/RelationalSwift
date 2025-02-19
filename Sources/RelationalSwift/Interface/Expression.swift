@@ -9,7 +9,7 @@ public protocol Expression<ExpressionValue>: Sendable {
 
     /// Appends the SQL representation to the builder.
     /// - Parameter builder: SQL builder.
-    func append(to builder: SQLBuilder)
+    func append(to builder: inout SQLBuilder)
 }
 
 // MARK: - Expr Cast Expressions
@@ -19,8 +19,8 @@ public struct ExprCastExpression<Value>: Expression {
 
     var operand: any Expression
 
-    public func append(to builder: SQLBuilder) {
-        operand.append(to: builder)
+    public func append(to builder: inout SQLBuilder) {
+        operand.append(to: &builder)
     }
 }
 
@@ -41,7 +41,7 @@ public struct KeywordExpression<Value>: Expression {
         self.keyword = keyword
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append(keyword)
     }
 }
@@ -63,10 +63,10 @@ public struct UnaryOperatorExpression<Value>: Expression {
         self.operand = operand
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("(")
         builder.sql.append(`operator`)
-        operand.append(to: builder)
+        operand.append(to: &builder)
         builder.sql.append(")")
     }
 }
@@ -86,9 +86,9 @@ public struct SuffixUnaryOperatorExpression<Value>: Expression {
         self.operator = `operator`
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("(")
-        operand.append(to: builder)
+        operand.append(to: &builder)
         builder.sql.append(`operator`)
         builder.sql.append(")")
     }
@@ -117,9 +117,9 @@ public struct CastExpression<Value>: Expression {
         self.type = type
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("CAST(")
-        operand.append(to: builder)
+        operand.append(to: &builder)
         builder.sql.append("AS")
         builder.sql.append(type)
         builder.sql.append(")")
@@ -159,11 +159,11 @@ public struct BinaryOperatorExpression<Value>: Expression {
         self.right = right
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("(")
-        left.append(to: builder)
+        left.append(to: &builder)
         builder.sql.append(`operator`)
-        right.append(to: builder)
+        right.append(to: &builder)
         builder.sql.append(")")
     }
 }
@@ -229,14 +229,14 @@ public struct ScalarFunctionExpression<Value>: Expression {
         self.arguments = arguments
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append(function)
         builder.sql.append("(")
         for (index, argument) in arguments.enumerated() {
             if index > 0 {
                 builder.sql.append(",")
             }
-            argument.append(to: builder)
+            argument.append(to: &builder)
         }
         builder.sql.append(")")
     }
@@ -251,13 +251,13 @@ public struct ConcatFunctionExpression<Value>: Expression {
         self.arguments = arguments
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("(")
         for (index, argument) in arguments.enumerated() {
             if index > 0 {
                 builder.sql.append("||")
             }
-            argument.append(to: builder)
+            argument.append(to: &builder)
         }
         builder.sql.append(")")
     }
@@ -542,7 +542,7 @@ public struct AggregateFunctionExpression<Value>: Expression {
         self.arguments = arguments
     }
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append(function)
         builder.sql.append("(")
         if distinct {
@@ -552,7 +552,7 @@ public struct AggregateFunctionExpression<Value>: Expression {
             if index > 0 {
                 builder.sql.append(",")
             }
-            argument.append(to: builder)
+            argument.append(to: &builder)
         }
         builder.sql.append(")")
     }
@@ -637,7 +637,7 @@ struct SingleValueQueryExpression<Value>: Expression {
 
     public var query: SingleValueQuery<Value>
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("(")
         builder.sql.append(query.statement)
         builder.binders.append(query.binder)
@@ -658,14 +658,14 @@ public struct InExpression: Expression {
         self.values = values
     }
 
-    public func append(to builder: SQLBuilder) {
-        operand.append(to: builder)
+    public func append(to builder: inout SQLBuilder) {
+        operand.append(to: &builder)
         builder.sql.append("IN (")
         for (index, value) in values.enumerated() {
             if index > 0 {
                 builder.sql.append(",")
             }
-            value.append(to: builder)
+            value.append(to: &builder)
         }
         builder.sql.append(")")
     }

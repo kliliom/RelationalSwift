@@ -3,7 +3,7 @@
 //
 
 /// Action to take on foreign key changes.
-public enum ForeignKeyAction: SQLConvertible, Sendable {
+public enum ForeignKeyAction: SQLBuilderAppendable, Sendable {
     /// CASCADE on foreign key changes.
     case cascade
     /// RESTRICT on foreign key changes.
@@ -15,7 +15,7 @@ public enum ForeignKeyAction: SQLConvertible, Sendable {
     /// NO ACTION on foreign key changes.
     case noAction
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         switch self {
         case .cascade:
             builder.sql.append("CASCADE")

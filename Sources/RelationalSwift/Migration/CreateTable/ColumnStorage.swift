@@ -3,7 +3,7 @@
 //
 
 /// Storage type for a column.
-public enum ColumnStorage: SQLConvertible, Sendable, Equatable {
+public enum ColumnStorage: SQLBuilderAppendable, Sendable, Equatable {
     /// INTEGER storage type.
     case integer
     /// VARCHAR storage type.
@@ -21,7 +21,7 @@ public enum ColumnStorage: SQLConvertible, Sendable, Equatable {
     /// This is considered unsafe as it allows for arbitrary SQL to be injected.
     case unsafe(String)
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         switch self {
         case .integer:
             builder.sql.append("INTEGER")

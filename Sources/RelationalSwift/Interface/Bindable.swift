@@ -58,7 +58,7 @@ public protocol Bindable: Expression<Self> & Sendable {
 }
 
 extension Bindable {
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("?")
         builder.binders.append(managedBinder)
     }
@@ -458,7 +458,7 @@ extension Bindable where Self: RawRepresentable, RawValue: Bindable {
 extension Optional: Expression where Wrapped: Bindable {
     public typealias ExpressionValue = Self
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("?")
         builder.binders.append(managedBinder)
     }
@@ -496,7 +496,7 @@ extension Optional: Bindable where Wrapped: Bindable {
 extension Array: Expression where Self: Codable, Element: Bindable {
     public typealias ExpressionValue = Self
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("?")
         builder.binders.append(managedBinder)
     }
@@ -507,7 +507,7 @@ extension Array: Bindable where Self: Codable, Element: Bindable {}
 extension Dictionary: Expression where Self: Codable, Key: Bindable, Value: Bindable {
     public typealias ExpressionValue = Self
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         builder.sql.append("?")
         builder.binders.append(managedBinder)
     }

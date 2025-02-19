@@ -14,8 +14,8 @@ struct OrderTests {
     ] as [(Order, [String])])
     func appendToBuilder(argument: (Order, [String])) {
         let order = argument.0
-        let builder = SQLBuilder()
-        order.append(to: builder)
+        var builder = SQLBuilder()
+        order.append(to: &builder)
 
         #expect(builder.sql == [argument.1.first!])
     }

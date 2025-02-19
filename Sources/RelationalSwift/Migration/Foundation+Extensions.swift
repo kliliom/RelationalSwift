@@ -14,7 +14,7 @@ extension String {
 extension [String] {
     /// Appends the elements to the builder.
     /// - Parameter builder: SQL builder to append to.
-    func appendAsSQLIdentifierList(to builder: SQLBuilder) {
+    func appendAsSQLIdentifierList(to builder: inout SQLBuilder) {
         builder.sql.append("(")
         for (index, column) in enumerated() {
             if index > 0 {

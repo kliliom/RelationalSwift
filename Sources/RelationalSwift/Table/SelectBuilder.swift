@@ -3,7 +3,7 @@
 //
 
 func buildSelect(
-    into builder: SQLBuilder,
+    into builder: inout SQLBuilder,
     from table: String,
     columns: [any Expression],
     condition: (any Expression)?,
@@ -22,7 +22,7 @@ func buildSelect(
         } else {
             builder.sql.append(",")
         }
-        column.append(to: builder)
+        column.append(to: &builder)
     }
 
     builder.sql.append("FROM")
@@ -30,7 +30,7 @@ func buildSelect(
 
     if let condition {
         builder.sql.append("WHERE")
-        condition.append(to: builder)
+        condition.append(to: &builder)
     }
 
     if !groupBy.isEmpty {
@@ -42,13 +42,13 @@ func buildSelect(
             } else {
                 builder.sql.append(",")
             }
-            group.append(to: builder)
+            group.append(to: &builder)
         }
     }
 
     if let having {
         builder.sql.append("HAVING")
-        having.append(to: builder)
+        having.append(to: &builder)
     }
 
     if !orderBy.isEmpty {
@@ -60,7 +60,7 @@ func buildSelect(
             } else {
                 builder.sql.append(",")
             }
-            order.append(to: builder)
+            order.append(to: &builder)
         }
     }
 

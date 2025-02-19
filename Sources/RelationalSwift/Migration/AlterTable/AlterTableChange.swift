@@ -3,4 +3,4 @@
 //
 
 /// Base protocol for all alter table changes.
-public protocol AlterTableChange: Change, SQLConvertible {}
+public protocol AlterTableChange: Change, SQLBuilderAppendable {}

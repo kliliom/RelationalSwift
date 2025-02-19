@@ -3,7 +3,7 @@
 //
 
 /// Method to resolve conflicts.
-public enum ConflictResolution: SQLConvertible, Sendable {
+public enum ConflictResolution: SQLBuilderAppendable, Sendable {
     /// ROLLBACK on conflict.
     case rollback
     /// ABORT on conflict.
@@ -15,7 +15,7 @@ public enum ConflictResolution: SQLConvertible, Sendable {
     /// REPLACE on conflict.
     case replace
 
-    public func append(to builder: SQLBuilder) {
+    public func append(to builder: inout SQLBuilder) {
         switch self {
         case .rollback:
             builder.sql.append("ON CONFLICT ROLLBACK")
