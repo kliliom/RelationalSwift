@@ -8,7 +8,7 @@ import Foundation
 func buildDelete(
     into builder: SQLBuilder,
     from table: String,
-    condition: (some Expression)? = nil
+    condition: (some Expression)?
 ) {
     builder.sql.append("DELETE FROM")
     builder.sql.append(table)

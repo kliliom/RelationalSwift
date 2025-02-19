@@ -10,7 +10,7 @@ import RelationalSwift
 
 @Table private struct TestEntry {
     @Column var a: Int
-    @Column var b: Int
+    @Column var b: Int?
 }
 
 @Suite("SelectSource Tests")
@@ -95,7 +95,7 @@ struct SelectSourceTests {
 
     @Test("Select first column")
     func selectFirstColumn() async throws {
-        var row: Int?
+        var row: Int??
         row = try await db.from(TestEntry.table).where { $0.a == 1 }.selectFirst { $0.b }
         #expect(row == 1)
         row = try await db.from(TestEntry.table).where { $0.a == 2 }.selectFirst { $0.b }
@@ -183,5 +183,31 @@ struct SelectSourceTests {
         #expect(count == 1)
         count = try await db.from(TestEntry.table).where { $0.a == 3 }.count(distinct: true) { $0.a }
         #expect(count == 1)
+    }
+
+    @Test("Order by")
+    func orderBy() async throws {
+        var rows: [TestEntry]
+
+        rows = try await db.from(TestEntry.table).orderBy(asc: \.a).select()
+        #expect(rows.map(\.a) == [1, 2, 2, 3, 3, 3])
+
+        rows = try await db.from(TestEntry.table).orderBy { .asc($0.a) }.select()
+        #expect(rows.map(\.a) == [1, 2, 2, 3, 3, 3])
+
+        rows = try await db.from(TestEntry.table).orderBy(desc: \.a).orderBy(asc: \.b).select()
+        #expect(rows.map(\.a) == [3, 3, 3, 2, 2, 1])
+        #expect(rows.map(\.b) == [4, 5, 6, 2, 3, 1])
+
+        rows = try await db.from(TestEntry.table).orderBy { .desc($0.a) }.orderBy { .asc($0.b) }.select()
+        #expect(rows.map(\.a) == [3, 3, 3, 2, 2, 1])
+        #expect(rows.map(\.b) == [4, 5, 6, 2, 3, 1])
+
+        try await db.insert(TestEntry(a: 4, b: nil))
+        rows = try await db.from(TestEntry.self).orderBy(asc: \.b, nullPosition: .first).select()
+        #expect(rows.map(\.a) == [4, 1, 2, 2, 3, 3, 3])
+
+        rows = try await db.from(TestEntry.self).orderBy(asc: \.b, nullPosition: .last).select()
+        #expect(rows.map(\.a) == [1, 2, 2, 3, 3, 3, 4])
     }
 }

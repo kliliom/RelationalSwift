@@ -7,7 +7,8 @@ func buildSelect(
     into builder: SQLBuilder,
     from table: String,
     columns: [any Expression],
-    condition: (some Expression)? = nil,
+    condition: (some Expression)?,
+    orderBy: [OrderingTerm],
     limit: Int? = nil,
     offset: Int? = nil
 ) {
@@ -29,6 +30,19 @@ func buildSelect(
     if let condition {
         builder.sql.append("WHERE")
         condition.append(to: builder)
+    }
+
+    if !orderBy.isEmpty {
+        builder.sql.append("ORDER BY")
+        var isFirstOrder = true
+        for order in orderBy {
+            if isFirstOrder {
+                isFirstOrder = false
+            } else {
+                builder.sql.append(",")
+            }
+            order.append(to: builder)
+        }
     }
 
     if let limit {

@@ -16,6 +16,9 @@ public struct SelectSource<T: TableRef>: Sendable {
     /// Condition.
     let condition: ExprCastExpression<Bool?>?
 
+    /// Ordering terms.
+    let orderingTerms: [OrderingTerm]
+
     /// Creates a select query for selected columns.
     /// - Parameters:
     ///   - block: Columns builder block.
@@ -33,6 +36,7 @@ public struct SelectSource<T: TableRef>: Sendable {
             from: tableRef._sqlFrom,
             columns: [block(tableRef)],
             condition: condition,
+            orderBy: orderingTerms,
             limit: limit,
             offset: offset
         )
@@ -62,6 +66,7 @@ public struct SelectSource<T: TableRef>: Sendable {
             from: tableRef._sqlFrom,
             columns: columnSqlRefs,
             condition: condition,
+            orderBy: orderingTerms,
             limit: limit,
             offset: offset
         )
@@ -90,6 +95,7 @@ public struct SelectSource<T: TableRef>: Sendable {
             from: tableRef._sqlFrom,
             columns: tableRef._allColumnRefs,
             condition: condition,
+            orderBy: orderingTerms,
             limit: limit,
             offset: offset
         )
@@ -177,7 +183,8 @@ public struct SelectSource<T: TableRef>: Sendable {
             columns: [
                 block(tableRef).count(distinct: distinct),
             ],
-            condition: condition
+            condition: condition,
+            orderBy: orderingTerms
         )
 
         let database = database
@@ -197,7 +204,8 @@ public struct SelectSource<T: TableRef>: Sendable {
             columns: [
                 sqlAllColumns.count(),
             ],
-            condition: condition
+            condition: condition,
+            orderBy: orderingTerms
         )
 
         let database = database
@@ -236,7 +244,54 @@ public struct SelectSource<T: TableRef>: Sendable {
         return SelectSource(
             database: database,
             tableRef: tableRef,
-            condition: condition
+            condition: condition,
+            orderingTerms: orderingTerms
+        )
+    }
+
+    /// Adds an ordering term to the select query.
+    /// - Parameter block: Ordering term builder block.
+    /// - Returns: Select source with the added ordering term.
+    public func orderBy(_ block: (T) throws -> OrderingTerm) rethrows -> SelectSource<T> {
+        try SelectSource(
+            database: database,
+            tableRef: tableRef,
+            condition: condition,
+            orderingTerms: orderingTerms + [block(tableRef)]
+        )
+    }
+
+    /// Adds an ascending ordering term to the select query.
+    /// - Parameters:
+    ///   - keyPath: Key path to order by.
+    ///   - nullPosition: Null position.
+    /// - Returns: Select source with the added ordering term.
+    public func orderBy(
+        asc keyPath: KeyPath<T, some Expression>,
+        nullPosition: OrderingTerm.NullPosition? = nil
+    ) -> SelectSource<T> {
+        SelectSource(
+            database: database,
+            tableRef: tableRef,
+            condition: condition,
+            orderingTerms: orderingTerms + [.asc(tableRef[keyPath: keyPath], nullPosition: nullPosition)]
+        )
+    }
+
+    /// Adds a descending ordering term to the select query.
+    /// - Parameters:
+    ///   - keyPath: Key path to order by.
+    ///   - nullPosition: Null position.
+    /// - Returns: Select source with the added ordering term.
+    public func orderBy(
+        desc keyPath: KeyPath<T, some Expression>,
+        nullPosition: OrderingTerm.NullPosition? = nil
+    ) -> SelectSource<T> {
+        SelectSource(
+            database: database,
+            tableRef: tableRef,
+            condition: condition,
+            orderingTerms: orderingTerms + [.desc(tableRef[keyPath: keyPath], nullPosition: nullPosition)]
         )
     }
 }
@@ -246,13 +301,13 @@ extension Database {
     /// - Parameter table: Table type.
     /// - Returns: Select source.
     public nonisolated func from<T: Table, R: TableRef>(_ table: T.Type) -> SelectSource<R> where T.TableRefType == R {
-        SelectSource(database: self, tableRef: table.table, condition: nil)
+        SelectSource(database: self, tableRef: table.table, condition: nil, orderingTerms: [])
     }
 
     /// Initializes a new select source.
     /// - Parameter tableRef: Table reference.
     /// - Returns: Select source.
     public nonisolated func from<R: TableRef>(_ tableRef: R) -> SelectSource<R> {
-        SelectSource(database: self, tableRef: tableRef, condition: nil)
+        SelectSource(database: self, tableRef: tableRef, condition: nil, orderingTerms: [])
     }
 }

@@ -9,7 +9,7 @@ func buildUpdate(
     into builder: SQLBuilder,
     in table: String,
     setters: [ColumnValueSetter],
-    condition: (some Expression)? = nil
+    condition: (some Expression)?
 ) {
     builder.sql.append("UPDATE")
     builder.sql.append(table)
