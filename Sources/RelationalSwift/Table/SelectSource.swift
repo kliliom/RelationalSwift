@@ -16,6 +16,12 @@ public struct SelectSource<T: TableRef>: Sendable {
     /// Condition.
     let condition: ExprCastExpression<Bool?>?
 
+    /// Group by terms.
+    let groupBy: [any Expression]
+
+    /// Having term.
+    let having: (any Expression)?
+
     /// Ordering terms.
     let orderingTerms: [OrderingTerm]
 
@@ -36,6 +42,8 @@ public struct SelectSource<T: TableRef>: Sendable {
             from: tableRef._sqlFrom,
             columns: [block(tableRef)],
             condition: condition,
+            groupBy: groupBy,
+            having: having,
             orderBy: orderingTerms,
             limit: limit,
             offset: offset
@@ -66,6 +74,8 @@ public struct SelectSource<T: TableRef>: Sendable {
             from: tableRef._sqlFrom,
             columns: columnSqlRefs,
             condition: condition,
+            groupBy: groupBy,
+            having: having,
             orderBy: orderingTerms,
             limit: limit,
             offset: offset
@@ -95,6 +105,8 @@ public struct SelectSource<T: TableRef>: Sendable {
             from: tableRef._sqlFrom,
             columns: tableRef._allColumnRefs,
             condition: condition,
+            groupBy: groupBy,
+            having: having,
             orderBy: orderingTerms,
             limit: limit,
             offset: offset
@@ -184,6 +196,8 @@ public struct SelectSource<T: TableRef>: Sendable {
                 block(tableRef).count(distinct: distinct),
             ],
             condition: condition,
+            groupBy: groupBy,
+            having: having,
             orderBy: orderingTerms
         )
 
@@ -205,6 +219,8 @@ public struct SelectSource<T: TableRef>: Sendable {
                 sqlAllColumns.count(),
             ],
             condition: condition,
+            groupBy: groupBy,
+            having: having,
             orderBy: orderingTerms
         )
 
@@ -245,6 +261,8 @@ public struct SelectSource<T: TableRef>: Sendable {
             database: database,
             tableRef: tableRef,
             condition: condition,
+            groupBy: groupBy,
+            having: having,
             orderingTerms: orderingTerms
         )
     }
@@ -257,6 +275,8 @@ public struct SelectSource<T: TableRef>: Sendable {
             database: database,
             tableRef: tableRef,
             condition: condition,
+            groupBy: groupBy,
+            having: having,
             orderingTerms: orderingTerms + [block(tableRef)]
         )
     }
@@ -274,6 +294,8 @@ public struct SelectSource<T: TableRef>: Sendable {
             database: database,
             tableRef: tableRef,
             condition: condition,
+            groupBy: groupBy,
+            having: having,
             orderingTerms: orderingTerms + [.asc(tableRef[keyPath: keyPath], nullPosition: nullPosition)]
         )
     }
@@ -291,7 +313,51 @@ public struct SelectSource<T: TableRef>: Sendable {
             database: database,
             tableRef: tableRef,
             condition: condition,
+            groupBy: groupBy,
+            having: having,
             orderingTerms: orderingTerms + [.desc(tableRef[keyPath: keyPath], nullPosition: nullPosition)]
+        )
+    }
+
+    /// Adds a group by term to the select query.
+    /// - Parameter block: Group by term builder block.
+    /// - Returns: Select source with the added group by term.
+    public func groupBy(_ block: (T) -> any Expression) -> SelectSource<T> {
+        SelectSource(
+            database: database,
+            tableRef: tableRef,
+            condition: condition,
+            groupBy: groupBy + [block(tableRef)],
+            having: having,
+            orderingTerms: orderingTerms
+        )
+    }
+
+    /// Adds a having term to the select query.
+    /// - Parameter block: Having term builder block.
+    /// - Returns: Select source with the added having term.
+    public func having<E: Expression>(_ block: (T) -> E) -> SelectSource<T> where E.ExpressionValue == Bool {
+        SelectSource(
+            database: database,
+            tableRef: tableRef,
+            condition: condition,
+            groupBy: groupBy,
+            having: having.map { $0 && block(tableRef) } ?? block(tableRef),
+            orderingTerms: orderingTerms
+        )
+    }
+
+    /// Adds a having term to the select query.
+    /// - Parameter block: Having term builder block.
+    /// - Returns: Select source with the added having term.
+    public func having<E: Expression>(_ block: (T) -> E) -> SelectSource<T> where E.ExpressionValue == Bool? {
+        SelectSource(
+            database: database,
+            tableRef: tableRef,
+            condition: condition,
+            groupBy: groupBy,
+            having: having.map { $0 && block(tableRef) } ?? block(tableRef),
+            orderingTerms: orderingTerms
         )
     }
 }
@@ -301,13 +367,13 @@ extension Database {
     /// - Parameter table: Table type.
     /// - Returns: Select source.
     public nonisolated func from<T: Table, R: TableRef>(_ table: T.Type) -> SelectSource<R> where T.TableRefType == R {
-        SelectSource(database: self, tableRef: table.table, condition: nil, orderingTerms: [])
+        SelectSource(database: self, tableRef: table.table, condition: nil, groupBy: [], having: nil, orderingTerms: [])
     }
 
     /// Initializes a new select source.
     /// - Parameter tableRef: Table reference.
     /// - Returns: Select source.
     public nonisolated func from<R: TableRef>(_ tableRef: R) -> SelectSource<R> {
-        SelectSource(database: self, tableRef: tableRef, condition: nil, orderingTerms: [])
+        SelectSource(database: self, tableRef: tableRef, condition: nil, groupBy: [], having: nil, orderingTerms: [])
     }
 }

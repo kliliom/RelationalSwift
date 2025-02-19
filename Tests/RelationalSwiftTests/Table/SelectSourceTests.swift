@@ -210,4 +210,34 @@ struct SelectSourceTests {
         rows = try await db.from(TestEntry.self).orderBy(asc: \.b, nullPosition: .last).select()
         #expect(rows.map(\.a) == [1, 2, 2, 3, 3, 3, 4])
     }
+
+    @Test("Group by and having")
+    func groupByAndHaving() async throws {
+        var rows: [(Int, Int?)]
+
+        rows = try await db.from(TestEntry.table).groupBy(\.a).select { ($0.a, $0.b) }
+        #expect(rows.map(\.0) == [1, 2, 3])
+        #expect(rows.map(\.1) == [1, 2, 4])
+
+        rows = try await db.from(TestEntry.table).groupBy(\.a).having { $0.a > 1 }.select { ($0.a, $0.b) }
+        #expect(rows.map(\.0) == [2, 3])
+        #expect(rows.map(\.1) == [2, 4])
+    }
+
+    @Test("Group by and having with aggregate functions")
+    func groupByAndHavingWithAggregateFunctions() async throws {
+        var rows: [Int]
+
+        rows = try await db.from(TestEntry.table).groupBy(\.a).select { $0.a.count() }
+        #expect(rows == [1, 2, 3])
+
+        rows = try await db.from(TestEntry.table).groupBy(\.a).select { $0.a.count(distinct: true) }
+        #expect(rows == [1, 1, 1])
+
+        rows = try await db.from(TestEntry.table).groupBy(\.a).select { $0.a.sum().unsafeExprCast(to: Int.self) }
+        #expect(rows == [1, 4, 9])
+
+        rows = try await db.from(TestEntry.table).groupBy(\.a).select { $0.a.min().unsafeExprCast(to: Int.self) }
+        #expect(rows == [1, 2, 3])
+    }
 }

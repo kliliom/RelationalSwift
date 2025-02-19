@@ -7,7 +7,9 @@ func buildSelect(
     into builder: SQLBuilder,
     from table: String,
     columns: [any Expression],
-    condition: (some Expression)?,
+    condition: (any Expression)?,
+    groupBy: [any Expression],
+    having: (any Expression)?,
     orderBy: [OrderingTerm],
     limit: Int? = nil,
     offset: Int? = nil
@@ -30,6 +32,24 @@ func buildSelect(
     if let condition {
         builder.sql.append("WHERE")
         condition.append(to: builder)
+    }
+
+    if !groupBy.isEmpty {
+        builder.sql.append("GROUP BY")
+        var isFirstGroup = true
+        for group in groupBy {
+            if isFirstGroup {
+                isFirstGroup = false
+            } else {
+                builder.sql.append(",")
+            }
+            group.append(to: builder)
+        }
+    }
+
+    if let having {
+        builder.sql.append("HAVING")
+        having.append(to: builder)
     }
 
     if !orderBy.isEmpty {
