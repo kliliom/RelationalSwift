@@ -34,12 +34,14 @@ public struct SelectSource<T: TableRef>: Sendable {
         _ block: (T) -> (Column),
         limit: Int? = nil,
         offset: Int? = nil
-    ) throws -> SingleValueQuery<Column.ExpressionValue> where Column.ExpressionValue: Bindable {
+    ) throws -> SQLQuery<Column.ExpressionValue> where Column.ExpressionValue: Bindable {
+        let column = block(tableRef)
+
         var builder = SQLBuilder()
         buildSelect(
             into: &builder,
             from: tableRef._sqlFrom,
-            columns: [block(tableRef)],
+            columns: [column],
             condition: condition,
             groupBy: groupBy,
             having: having,
@@ -48,7 +50,9 @@ public struct SelectSource<T: TableRef>: Sendable {
             offset: offset
         )
 
-        return SingleValueQuery(from: builder)
+        return builder.makeStatement().query { stmt, index, _ in
+            try Column.ExpressionValue.column(of: stmt, at: &index)
+        }
     }
 
     /// Executes a select query for selected columns.

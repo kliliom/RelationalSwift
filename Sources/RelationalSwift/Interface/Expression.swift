@@ -630,21 +630,6 @@ extension Expression {
     }
 }
 
-// MARK: - Query Expressions
-
-struct SingleValueQueryExpression<Value>: Expression {
-    public typealias ExpressionValue = Value
-
-    public var query: SingleValueQuery<Value>
-
-    public func append(to builder: inout SQLBuilder) {
-        builder.sql.append("(")
-        builder.sql.append(query.statement)
-        builder.binders.append(query.binder)
-        builder.sql.append(")")
-    }
-}
-
 // MARK: - In Expressions
 
 public struct InExpression: Expression {
@@ -674,9 +659,5 @@ public struct InExpression: Expression {
 extension Expression {
     public func `in`(_ values: any Expression...) -> InExpression {
         InExpression(self, values: values)
-    }
-
-    public func `in`(_ query: SingleValueQuery<some Bindable>) -> InExpression {
-        InExpression(self, values: [SingleValueQueryExpression(query: query)])
     }
 }

@@ -16,6 +16,15 @@ public func query<T>(_ statement: SQLStatement, stepper: @escaping Database.Mana
     SQLQuery(statement: statement, stepper: stepper)
 }
 
+extension SQLQuery: Expression {
+    public typealias ExpressionValue = T
+
+    public func append(to builder: inout SQLBuilder) {
+        builder.sql.append(statement.sql)
+        builder.binders.append(contentsOf: statement.binders)
+    }
+}
+
 extension SQLStatement {
     public func query<T>(stepper: @escaping Database.ManagedStepper<T>) -> SQLQuery<T> {
         SQLQuery(statement: self, stepper: stepper)
