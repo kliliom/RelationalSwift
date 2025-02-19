@@ -1,6 +1,5 @@
 //
 //  Insertable.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// Table with insertable rows.

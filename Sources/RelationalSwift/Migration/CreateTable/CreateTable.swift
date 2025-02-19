@@ -1,6 +1,5 @@
 //
 //  CreateTable.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A change that creates a table.

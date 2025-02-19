@@ -1,6 +1,5 @@
 //
 //  DropTable.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 public struct DropTable: Change, SQLConvertible {

@@ -1,6 +1,5 @@
 //
 //  UnsafeCheckTableConstraint.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A CHECK constraint on a table.

@@ -1,6 +1,5 @@
 //
 //  AlterTable.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// Base for all alter table changes.

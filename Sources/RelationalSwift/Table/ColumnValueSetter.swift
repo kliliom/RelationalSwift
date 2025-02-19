@@ -1,6 +1,5 @@
 //
 //  ColumnValueSetter.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A column name and a value binder pair.

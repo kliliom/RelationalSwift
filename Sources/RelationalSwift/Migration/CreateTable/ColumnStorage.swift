@@ -1,6 +1,5 @@
 //
 //  ColumnStorage.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// Storage type for a column.

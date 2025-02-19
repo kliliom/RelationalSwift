@@ -1,6 +1,5 @@
 //
 //  ExpressionTests.swift
-//  Created by Kristof Liliom in 2025.
 //
 
 import Foundation

@@ -1,6 +1,5 @@
 //
 //  ForeignKeyTableConstraint.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A FOREIGN KEY constraint on a table.

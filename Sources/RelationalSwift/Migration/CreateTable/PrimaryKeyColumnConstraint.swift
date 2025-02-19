@@ -1,6 +1,5 @@
 //
 //  PrimaryKeyColumnConstraint.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A PRIMARY KEY constraint on a column.

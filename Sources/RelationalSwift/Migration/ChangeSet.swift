@@ -1,6 +1,5 @@
 //
 //  ChangeSet.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A change set that groups multiple changes together.

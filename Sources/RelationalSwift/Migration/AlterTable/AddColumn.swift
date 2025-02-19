@@ -1,6 +1,5 @@
 //
 //  AddColumn.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A change describing the addition of a column to a table.

@@ -1,6 +1,5 @@
 //
 //  ManagedIndex.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// Index that is managed by the database.

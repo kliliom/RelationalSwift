@@ -1,6 +1,5 @@
 //
 //  ForeignKeyAction.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// Action to take on foreign key changes.

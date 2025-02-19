@@ -1,6 +1,5 @@
 //
 //  Validation.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A type that conllecs validation issues.

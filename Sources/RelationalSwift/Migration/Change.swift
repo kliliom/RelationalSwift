@@ -1,6 +1,5 @@
 //
 //  Change.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A change that can be applied to a database.

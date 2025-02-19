@@ -1,6 +1,5 @@
 //
 //  OrderingTerm.swift
-//  Created by Kristof Liliom in 2025.
 //
 
 public enum OrderingTerm: Sendable {

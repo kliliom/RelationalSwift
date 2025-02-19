@@ -1,6 +1,5 @@
 //
 //  TableConstraint.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A constraint on a table.

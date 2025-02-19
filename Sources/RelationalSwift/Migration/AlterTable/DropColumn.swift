@@ -1,6 +1,5 @@
 //
 //  DropColumn.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A change describing the removal of a column from a table.

@@ -1,6 +1,5 @@
 //
 //  NotNullColumnConstraint.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A NOT NULL constraint.

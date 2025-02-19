@@ -1,6 +1,5 @@
 //
 //  UniqueColumnConstraint.swift
-//  Created by Kristof Liliom in 2024.
 //
 
 /// A UNIQUE constraint on a column.
